@@ -1,5 +1,9 @@
 # Reponix
 
+[![npm version](https://img.shields.io/npm/v/reponix.svg)](https://www.npmjs.com/package/reponix)
+[![CI](https://github.com/Nandakumar333/Reponix/actions/workflows/ci.yml/badge.svg)](https://github.com/Nandakumar333/Reponix/actions/workflows/ci.yml)
+[![Deploy](https://github.com/Nandakumar333/Reponix/actions/workflows/deploy.yml/badge.svg)](https://github.com/Nandakumar333/Reponix/actions/workflows/deploy.yml)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D24-brightgreen.svg)](https://nodejs.org)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 
 Scaffold a production-grade **repository intelligence & modernization multi-agent AI system** into any codebase in 30 seconds.
@@ -100,8 +104,43 @@ npm run build
 
 # Run test suite
 npm test
+
+# Typecheck codebase
+npm run typecheck
 ```
+
+---
+
+## CI/CD & Automated Publishing
+
+Reponix uses GitHub Actions for continuous integration and automated npm deployments:
+
+- **Continuous Integration ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))**:
+  - Triggers on every push and pull request across `main`, `master`, and `feature/**`.
+  - Runs typechecking, vitest tests, and package verification against **Node 24.x** and **Node 25.x**.
+
+- **Automated Deployment ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml))**:
+  - Triggers **only** when changes are merged into the `main` branch.
+  - Automatically compares the local `packages/cli/package.json` version against the latest version published on [npmjs.com](https://www.npmjs.com/package/reponix).
+  - If a version bump is detected:
+    1. Verifies types, tests, and builds the bundle on Node 24.
+    2. Publishes the new package version to the public npm registry with package provenance.
+    3. Creates and pushes a release Git tag (e.g. `v0.1.1`).
+  - If no version bump is detected, deployment is safely skipped.
+
+### How to Release a New Version
+
+1. Bump the CLI version in your feature branch:
+   ```bash
+   npm version patch --workspace=packages/cli --no-git-tag-version
+   # or: npm version minor --workspace=packages/cli --no-git-tag-version
+   ```
+2. Commit and open a Pull Request to `main`.
+3. Once merged to `main`, GitHub Actions will build, test, publish to npm, and tag the release automatically.
+
+---
 
 ## License
 
 Apache-2.0
+
