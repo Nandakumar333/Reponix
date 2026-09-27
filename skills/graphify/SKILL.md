@@ -42,12 +42,15 @@ When the goal is to extract a single feature (e.g., *IdentityServer Login Flow*,
 
 ### 1.3 Call Hierarchy & Route-to-Data Tracing
 - **Entry-Point to Sink Pathfinding:**
-  - Trace execution paths from public ingress points down to terminal data sinks:
+  - Trace execution paths from public ingress points down to terminal data sinks across synchronous and asynchronous hops:
     $$\text{Ingress Route Handler} \longrightarrow \text{Controller} \longrightarrow \text{Domain Service} \longrightarrow \text{Repository} \longrightarrow \text{Database Client}$$
-- **Handling Dynamic & Indirect Invocations:**
-  - Explicit function calls (`foo()`) &rarr; Direct edge.
-  - Dependency Injection (DI) bindings (`@Inject(OrderService)`, `builder.Services.AddScoped<IUserStore, UserStore>()`) &rarr; Interface-to-Implementation resolved edge.
-  - Event publishing (`eventBus.emit('event', data)`) &rarr; Asynchronous decoupled edge. Map to matching subscribers/listeners.
+- **Distributed & Asynchronous Edge Resolution:**
+  - **Direct Synchronous Calls:** Explicit function calls (`foo()`) &rarr; Direct edge.
+  - **Dependency Injection (DI) bindings:** (`@Inject(OrderService)`, `builder.Services.AddScoped<IUserStore, UserStore>()`) &rarr; Interface-to-Implementation resolved edge.
+  - **gRPC RPC Bindings:** Client Stub Invocation (`client.GetStatus(req)`) &rarr; Protobuf Contract &rarr; Service Implementation.
+  - **Distributed Caching & Locks (Redis):** Cache Check (`redis.get(key)`) &rarr; Cache Miss Branch &rarr; Distributed Lock (`SET NX EX`) &rarr; Database query &rarr; Cache write (`redis.set(key, val, ttl)`).
+  - **Event Streaming (Kafka / RabbitMQ):** Event Producer (`producer.send(topic, key, payload)`) &rarr; Kafka Topic &rarr; Consumer Group Subscription (`@KafkaListener`, `eachMessage`) &rarr; Worker Consumer Handler.
+  - **Outbox Pattern:** Transactional database write to `outbox_events` table &rarr; Debezium CDC / Polling Relay &rarr; Kafka Topic &rarr; Consumer.
 
 ### 1.4 Cycle Detection & Strongly Connected Components (SCC)
 - Execute cycle detection algorithms (e.g., Tarjan's or Kosaraju's SCC) on the directed import graph.
@@ -64,18 +67,18 @@ Use these conceptual query patterns when extracting structural insights:
 
 ### Query 1: Feature Slice Isolation Query
 - **Goal:** Extract every file, method, and entity participating in a specific feature.
-- **Input:** Entry point symbol (e.g. `AccountController.Login`) and depth limit (or boundary interfaces).
-- **Output:** Exact list of source files, line ranges, and database models belonging to the feature slice.
+- **Input:** Entry point symbol (e.g. `OrderController.Create` or `OrderConsumer.onMessage`) and depth limit (or boundary interfaces).
+- **Output:** Exact list of source files, line ranges, event topics, cache keys, and database models belonging to the feature slice.
 
 ### Query 2: Blast Radius Analysis
-- **Goal:** Determine all modules affected if a specific file or interface is modified.
-- **Traversal:** Compute the transitive closure of incoming edges (reverse BFS/DFS starting from the target file).
-- **Output:** Set of affected files categorized by depth (Depth 1: Direct consumers, Depth 2+: Transitive consumers).
+- **Goal:** Determine all modules affected if a specific file, event schema, or interface is modified.
+- **Traversal:** Compute the transitive closure of incoming edges (reverse BFS/DFS starting from the target file or event schema).
+- **Output:** Set of affected files categorized by depth (Depth 1: Direct consumers/subscribers, Depth 2+: Transitive consumers).
 
-### Query 3: Execution Path Tracing
-- **Goal:** Determine whether and how an API route reaches a sensitive sink (e.g. database write, password verification, external payment call).
-- **Traversal:** Directed path search (Dijkstra or BFS) from `Route(endpoint)` to `Sink(operation)`.
-- **Output:** Ordered list of function calls and file locations connecting ingress to egress.
+### Query 3: Execution Path Tracing (Sync & Async)
+- **Goal:** Determine whether and how an API route or event trigger reaches a sensitive sink (e.g. database write, Redis lock, Kafka event emission, external payment call).
+- **Traversal:** Directed path search (Dijkstra or BFS) from `Route(endpoint)` or `Consumer(topic)` to `Sink(operation)`.
+- **Output:** Ordered list of function calls, cache checks, and message dispatches connecting ingress to egress.
 
 ---
 
@@ -84,12 +87,14 @@ Use these conceptual query patterns when extracting structural insights:
 When reporting graph insights in documentation, present findings in clean, structured tables:
 
 ### Feature Execution Trace Table
-| Step | Function / Method | File & Line Range | Invocation Type | Purpose in Flow |
+| Step | Function / Component | File & Line Range | Invocation Type | Purpose in Flow |
 |---|---|---|---|---|
-| 1 | `AccountController.Login` | `src/Controllers/AccountController.cs#L68` | HTTP POST Route | Ingress payload validation |
-| 2 | `SignInManager.PasswordSignInAsync`| `src/Services/SignInManager.cs#L35` | Method Call | Orchestrates user lookup and check |
-| 3 | `PasswordHasher.VerifyHashedPassword`| `src/Security/PasswordHasher.cs#L45` | Cryptographic Call | PBKDF2 hash verification |
-| 4 | `UserStore.FindByNameAsync` | `src/Stores/UserStore.cs#L22` | Database Query | Fetch user record from database |
+| 1 | `OrderController.Create` | `src/controllers/OrderController.ts#L35` | HTTP POST Route | Ingress payload & idempotency key check |
+| 2 | `RedisCache.get` | `src/cache/orderCache.ts#L22` | Distributed Cache | Cache-aside check for duplicate submission |
+| 3 | `RedisLock.acquire` | `src/locks/redisLock.ts#L30` | Distributed Lock | Mutual exclusion on order modification |
+| 4 | `OrderService.process` | `src/services/OrderService.ts#L45` | Method Call | Domain invariant evaluation & DB transaction |
+| 5 | `OrderProducer.publish`| `src/events/orderProducer.ts#L50` | Kafka Event Publish| Emits `OrderCreatedEvent` to `orders.events.v1` |
+| 6 | `BillingConsumer.handle`| `src/workers/billingConsumer.ts#L30` | Kafka Consumer ACK | Asynchronously processes payment against Stripe |
 
 ---
 

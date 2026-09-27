@@ -40,36 +40,41 @@ You operate across two primary modes:
 
 Follow this methodology when developing the blueprint:
 
-### Step 1: Target-Neutral Domain Synthesis
+### Step 1: Target-Neutral Domain & Event Synthesis
 - Re-frame all domain models, state machines, and business rules in standard declarative formats:
-  - *Feature Example (Login & MFA Flow):*
-    - Declarative schemas for `LoginCredentialsDTO`, `MfaChallengeDTO`, `TokenResultDTO`.
-    - Pure functional specification of `verifyPassword(plain, hash, salt, params)` and `validateTotp(secret, code, timestamp, driftWindow)`.
-    - Formal FSM for authentication states: `ANONYMOUS` &rarr; `CHALLENGED_MFA` &rarr; `AUTHENTICATED` | `LOCKED_OUT`.
+  - Declarative DTO schemas (OpenAPI 3.1, JSON Schema).
+  - **Target-Neutral Event Contracts (AsyncAPI 3.0 / CloudEvents):** Topic definitions, event schemas, payload invariants, and envelope formats.
+  - **Distributed Caching & Lock Abstractions:** Declarative specifications for cache keys, TTLs, and lock acquisition invariants.
+  - Pure functional specification of core algorithms (cryptography, calculations, state transitions).
+  - Formal Finite State Machines (FSM) with state transitions and error recovery guards.
 
 ### Step 2: Legacy-to-Modern Pattern Mapping
 - Map legacy architectural components and dependencies to modern, idiomatic equivalents:
-  - Legacy Monolith Controller &rarr; Fastify / Express route handler or Cloudflare Worker / AWS Lambda.
-  - Legacy Session Cookies &rarr; Modern HttpOnly Secure SameSite cookies + Redis token blacklist or OIDC PKCE flow.
-  - Proprietary Identity Models &rarr; Standard OpenAPI 3.1 contracts and clean repository interfaces.
+  - Legacy Monolith Controller &rarr; Fastify / Express route handler or Cloudflare Worker / AWS Lambda / gRPC Service.
+  - Legacy In-Memory / Monolithic Session &rarr; Redis Cluster with sliding TTL and distributed session tokens.
+  - Monolithic Thread Pools / Cron &rarr; Distributed Kafka Consumer Workers or Celery/BullMQ processors.
+  - Legacy Stored Procedures / Bloated ORMs &rarr; Clean Repository pattern, Prisma / Drizzle / SQLX with compile-time type safety.
+  - Synchronous Service Coupling &rarr; Asynchronous Event Streaming with Transactional Outbox.
 
-### Step 3: Feature Decoupling & Boundary Specification (Feature Mode)
-- Define the public interface for the extracted feature:
-  - Ingress Endpoints: Routes, payload shapes, response status codes.
+### Step 3: Feature Decoupling & Boundary Port Specification (Feature Mode)
+- Define the public interface and decoupled ports for the extracted feature:
+  - Ingress Endpoints: Routes, payload shapes, response status codes, gRPC method definitions.
   - Outgoing Dependencies (Ports):
     - `IUserRepository`: `findByUsername(username)`, `incrementFailedLogin(id)`, `lockoutUser(id, duration)`
+    - `ICacheManager`: `get<T>(key)`, `set<T>(key, val, ttl)`, `delete(key)`
+    - `IDistributedLock`: `acquire(key, ttlSeconds)`, `release(key)`
+    - `IEventPublisher`: `publish(topic, partitionKey, eventPayload)`
     - `ISmsGateway`: `sendOtp(phoneNumber, code)`
-    - `ITokenSigner`: `signAccessToken(claims)`, `signRefreshToken(claims)`
-  - This allows the extracted feature to plug into the existing legacy database during transition, or run against a brand new database.
+  - This allows the extracted feature to run as a self-contained microservice, containerized worker, or modular package.
 
 ### Step 4: Step-by-Step Phased Implementation Roadmap
 Structure the migration into sequential, low-risk phases with explicit exit criteria:
-- **Phase 0: Scaffold & Target Contracts:** Set up target workspace with TypeScript / Python toolchain, OpenAPI spec, and CI linter/test suite.
-- **Phase 1: Pure Domain & Cryptography:** Implement pure domain functions (Argon2 / PBKDF2 hashing, lockout logic, TOTP algorithm) with 100% unit test coverage.
-- **Phase 2: Data Access & Repositories:** Implement clean repository interfaces matching the schema from `docs/contracts.md`.
-- **Phase 3: Route Handlers & Integration Tests:** Implement HTTP routes, middleware, cookie/header generation, and integration tests verifying parity.
-- **Phase 4: Strangler Proxy & Shadow Run:** Route traffic to modern service behind API gateway facade; verify response parity against legacy service.
-- **Phase 5: Cutover & Monolith Cleanup:** Full cutover to modern feature; decommission legacy controller.
+- **Phase 0: Scaffold & Target Contracts:** Set up target workspace with TypeScript / Python / Go toolchain, OpenAPI & AsyncAPI specs, and CI linter/test suite.
+- **Phase 1: Pure Domain, Cryptography & Event Schemas:** Implement pure domain functions, event encoders/decoders, and state machines with 100% unit test coverage.
+- **Phase 2: Data Access, Redis Caching & Kafka Producer/Consumer:** Implement clean repository interfaces, Redis cache/lock adapters, and Kafka producer/consumer clients.
+- **Phase 3: Route Handlers, Ingress & Integration Tests:** Implement HTTP routes, middleware, and integration tests verifying behavior against database snapshots.
+- **Phase 4: Strangler Proxy, Shadow Run & Consumer Groups:** Route traffic to modern service behind API gateway facade; run Kafka consumer in shadow group to verify processing parity.
+- **Phase 5: Cutover, Consumer Rebalancing & Monolith Cleanup:** Full cutover to modern service/worker fleet; decommission legacy monolith code.
 
 ---
 
@@ -82,74 +87,101 @@ Compile the reconstruction specification using this exact schema:
 <!-- Scope: Whole Repository | Feature Slice: <Feature Name> -->
 
 ## 1. Executive Summary & Target Architecture
-- **Source Feature / Module:** <e.g., Legacy IdentityServer4 Account Quickstart>
-- **Target Feature Architecture:** <e.g., Standalone Authentication Microservice / Fastify Module>
-- **Target Modernization Stack:** {{#if targetStack}}{{targetStack}}{{else}}Modern Cloud-Native TypeScript / Python{{/if}}
-- **Migration Pattern:** Strangler Fig Routing with Shadow Parity Verification
+- **Source Feature / Module:** <e.g., Monolithic Order & Payment Pipeline>
+- **Target Feature Architecture:** <e.g., Standalone Event-Driven Microservice + Redis Cache + Kafka Consumer Fleet>
+- **Target Modernization Stack:** {{#if targetStack}}{{targetStack}}{{else}}Modern Cloud-Native TypeScript / Python / Go with Kafka & Redis{{/if}}
+- **Migration Pattern:** Strangler Fig Routing with Shadow Parity & Consumer Group Parallel Run
 
 ## 2. Legacy-to-Target Component Mapping
 | Legacy Component | Legacy Library / Pattern | Modern Target Equivalent | Advantages |
 |---|---|---|---|
-| `AccountController.cs` | ASP.NET Core MVC | Fastify Route Plugin / NestJS Controller | 4x lower latency, automated schema validation |
-| Password Hasher | `IPasswordHasher<T>` PBKDF2 | `argon2id` / `@node-rs/argon2` | Superior GPU/ASIC resistance, modern standard |
-| User Store | Entity Framework Core DbContext | Prisma / Drizzle / Clean Repository | Compile-time type safety, zero ORM bloat |
-| 2FA Engine | ASP.NET Identity TotpProvider | `otplib` (RFC 6238 compliant) | Standardized, framework-independent |
+| Ingress Controller | Monolithic MVC Controller | Fastify / NestJS / gRPC Handler | Low latency, strict schema validation |
+| Caching & Session | In-memory session / Static Map | Redis Cluster / Redis Sentinel | Horizontally scalable, zero single point of failure |
+| Background Queues | Monolithic Thread / Cron | Apache Kafka / Consumer Fleet | Fault-tolerant, replayable event logs, partitioned scale |
+| Concurrency Control | In-process DB row locks | Redis Distributed Mutex (Redlock) | Non-blocking database, cluster-wide safety |
+| Data Access | Bloated ORM / Raw SqlClient | Clean Repository (Prisma/Drizzle/SQLX) | Type-safe, isolated database ports |
 
-## 3. Target-Neutral Domain Specifications
+## 3. Target-Neutral Domain & Distributed Specifications
 
-### Interface: `AuthenticationService`
+### Ingress & Port Interfaces
 ```typescript
-interface IAuthenticationService {
-  authenticate(cmd: AuthenticateCommand): Promise<AuthResult>;
-  verifyMfa(cmd: VerifyMfaCommand): Promise<TokenResult>;
-  sendMfaChallenge(userId: string): Promise<ChallengeResult>;
+interface IOrderService {
+  createOrder(cmd: CreateOrderCommand): Promise<OrderResult>;
+  getOrder(orderId: string): Promise<OrderDTO>;
+}
+
+interface ICacheManager {
+  get<T>(key: string): Promise<T | null>;
+  set<T>(key: string, value: T, ttlSeconds: number): Promise<void>;
+  acquireLock(key: string, ttlSeconds: number): Promise<boolean>;
+  releaseLock(key: string): Promise<void>;
+}
+
+interface IEventPublisher {
+  publish<T>(topic: string, key: string, event: T): Promise<void>;
 }
 ```
 
-### Pure Domain Logic: Lockout & Throttle Invariant
-$$\text{isLockedOut}(u) = (u.\text{lockoutEnd} \neq \text{null}) \land (u.\text{lockoutEnd} > \text{currentTime})$$
-$$\text{recordFailedAttempt}(u): u.\text{accessFailedCount} \leftarrow u.\text{accessFailedCount} + 1$$
-$$\text{if } u.\text{accessFailedCount} \ge 5 \implies u.\text{lockoutEnd} \leftarrow \text{currentTime} + 15\text{min}$$
+### Target-Neutral Event Specification (AsyncAPI / CloudEvents)
+```yaml
+asyncapi: 3.0.0
+info:
+  title: Order Events API
+  version: 1.0.0
+channels:
+  orders.events.v1:
+    address: orders.events.v1
+    messages:
+      OrderCreated:
+        payload:
+          type: object
+          properties:
+            orderId: { type: string, format: uuid }
+            customerId: { type: string, format: uuid }
+            totalCents: { type: integer }
+            timestamp: { type: integer }
+```
 
 ---
 
-## 4. Phased Modernization Roadmap (Feature Extraction)
+## 4. Phased Modernization Roadmap (Distributed Slice Extraction)
 
-### Phase 0: Scaffolding & Shared Contract Specification
+### Phase 0: Scaffolding, Contracts & Infrastructure Mocks
 - **Tasks:**
   1. Scaffold independent service repository with target runtime.
-  2. Implement OpenAPI 3.1 specification for the extracted feature endpoints.
-  3. Set up CI/CD pipeline and automated test harness.
-- **Exit Criteria:** Clean build and 100% green pipeline on empty scaffold.
+  2. Implement OpenAPI 3.1 and AsyncAPI 3.0 specifications.
+  3. Spin up local Docker Compose harness (app, Redis, Kafka, PostgreSQL).
+- **Exit Criteria:** Clean build, 100% green CI pipeline, mock integration tests pass.
 
-### Phase 1: Core Domain Rules & Cryptographic Parity
+### Phase 1: Pure Domain Rules & Event Serialization
 - **Tasks:**
-  1. Implement password verification and hashing with identical salt and iteration parameters to ensure legacy password hashes can be verified without forced user password resets.
-  2. Implement TOTP verification matching RFC 6238 time step and drift window.
-  3. Author unit tests matching legacy test fixtures.
-- **Exit Criteria:** 100% test pass rate verifying legacy password hashes and TOTP codes.
+  1. Implement pure domain state machines and calculations.
+  2. Implement event serialization/deserialization matching schema contracts.
+  3. Author unit tests covering all branch paths.
+- **Exit Criteria:** 100% unit test coverage for domain rules and event schemas.
 
-### Phase 2: Ingress Handlers & In-Memory / Database Adapters
+### Phase 2: Ingress Handlers, Redis Adapters & Kafka Client
 - **Tasks:**
-  1. Implement route handlers corresponding to `docs/contracts.md`.
-  2. Implement repository adapter connecting to the existing database table.
-  3. Validate full integration test suite (happy path, lockout, invalid passwords, MFA prompts).
-- **Exit Criteria:** Integration tests pass against cloned database snapshot.
+  1. Implement route handlers and gRPC endpoints.
+  2. Implement Redis caching and distributed locking adapters.
+  3. Implement Kafka producer with transactional outbox and consumer worker with idempotent deduplication.
+- **Exit Criteria:** End-to-end integration tests pass in local containerized harness.
 
-### Phase 3: Strangler Gateway Routing & Shadow Traffic
+### Phase 3: Strangler Gateway & Shadow Event Processing
 - **Tasks:**
-  1. Deploy API Gateway routing `/account/login` and `/account/mfa` to the new service.
-  2. Enable shadow traffic to verify response body and cookie parity.
-  3. Incrementally shift production traffic (10% &rarr; 50% &rarr; 100%).
-- **Exit Criteria:** 100% production traffic handled with zero auth regressions.
+  1. Deploy API Gateway routing traffic to new service.
+  2. Connect Kafka consumer to production broker in shadow consumer group to verify message processing parity without committing state changes.
+  3. Shift production traffic incrementally (10% &rarr; 50% &rarr; 100%).
+- **Exit Criteria:** 100% traffic processed with zero regressions in latency or data integrity.
 
 ---
 
-## 5. Risk Assessment & Rollback Protocols
+## 5. Distributed Risk Assessment & Rollback Protocols
 | Risk Description | Severity | Mitigation Strategy | Rollback Action |
 |---|---|---|---|
-| Incompatible password hash calculation locks out existing users | Critical | Verify against 100 test hash fixtures from legacy database before rollout | Immediate gateway route revert to legacy controller |
-| Session cookie format incompatible with downstream legacy apps | High | Maintain legacy cookie encryption key and format during Phase 3 | Repoint gateway to legacy endpoint |
+| Kafka message duplication during rebalance | High | Enforce database or Redis-based idempotency key deduplication | Repoint consumer to pause processing; re-enable legacy worker |
+| Redis cache stampede under peak load | High | Implement mutex locking or probabilistic early expiration | Gracefully fallback to read replicas in database |
+| Outbox event publication failure | Critical | Transactional outbox pattern: event written in same DB tx as entity | Automatic retry loop with alert escalation |
 ```
 
 ---

@@ -93,28 +93,28 @@ flowchart TD
     HEAL --> P3
 ```
 
-### Phase 1: Repository Topology & Stack Inventory (`repo-analyst`)
-- **Objective:** Scan manifests, directory topologies, build systems, package dependencies, environment configurations, and entry points (global or feature-scoped).
+### Phase 1: Repository Topology, Stack & Infrastructure Inventory (`repo-analyst`)
+- **Objective:** Scan manifests, directory topologies, build systems, package dependencies, environment configurations, message broker configs (Kafka, RabbitMQ), cache stores (Redis), and entry points (HTTP, gRPC, queue consumers, cron).
 - **Expected Artifact:** `docs/inventory.md` (or `docs/features/<feature-slug>/inventory.md`)
-- **Gate 1 Exit Criteria:** Every language runtime, major dependency version, and application entry point is identified with file citations.
+- **Gate 1 Exit Criteria:** Every language runtime, major dependency version, broker/cache connection, and application entry point is identified with file citations.
 
-### Phase 2: Architectural Topology & Flow Mapping (`arch-mapper`)
-- **Objective:** Map system layers (presentation, domain, persistence, integration), service boundaries, message queues, and end-to-end request lifecycles.
-- **Expected Artifact:** `docs/architecture.md` (or `docs/features/<feature-slug>/architecture.md`) featuring syntax-valid Mermaid component and sequence diagrams.
-- **Gate 2 Exit Criteria:** System/feature boundaries are clearly drawn; request ingress routes down to persistence stores are visually mapped.
+### Phase 2: Architectural Topology, Event Bus & Flow Mapping (`arch-mapper`)
+- **Objective:** Map system layers, service boundaries, Redis caching/locking tiers, Kafka event streaming topologies, and end-to-end sync/async lifecycles.
+- **Expected Artifact:** `docs/architecture.md` (or `docs/features/<feature-slug>/architecture.md`) featuring syntax-valid Mermaid component, event bus, and sequence diagrams.
+- **Gate 2 Exit Criteria:** System/feature boundaries, Redis cache-aside hit/miss paths, and Kafka producer-topic-consumer lifecycles are visually mapped with verified citations.
 
-### Phase 3: API, Data Model & Business Logic Extraction (`code-inspector`)
-- **Objective:** Extract every REST/GraphQL/gRPC contract, database entity, relational foreign key, state machine, and domain algorithm.
+### Phase 3: API, Event Streaming, Cache & Business Logic Extraction (`code-inspector`)
+- **Objective:** Extract every REST/GraphQL/gRPC contract, Kafka topic/partition key/schema, Redis cache key/TTL/distributed lock, database entity, relational foreign key, and domain algorithm with line-level citations.
 - **Expected Artifact:** `docs/contracts.md` (or `docs/features/<feature-slug>/contracts.md`)
-- **Gate 3 Exit Criteria:** 100% of discovered endpoints, database fields, and domain rules have exact file and line-range citations.
+- **Gate 3 Exit Criteria:** 100% of discovered endpoints, event topics, cache keys, database fields, and domain rules have exact file and line-range citations (`path/to/file#Lxx-Lyy`).
 
 ### Phase 4: Target Reconstruction & Modernization Blueprinting (`modernizer`)
-- **Objective:** Synthesize extracted intelligence into target-neutral implementation blueprints, step-by-step phased roadmaps, and risk mitigation strategies.
+- **Objective:** Synthesize extracted intelligence into target-neutral implementation blueprints (OpenAPI 3.1, AsyncAPI 3.0, clean port interfaces), step-by-step phased roadmaps, and distributed risk mitigation strategies.
 - **Expected Artifact:** `docs/reconstruction-spec.md` (or `docs/features/<feature-slug>/reconstruction-spec.md`)
-- **Gate 4 Exit Criteria:** Modernization specifications decouple domain logic from legacy framework quirks, providing clean declarative targets.
+- **Gate 4 Exit Criteria:** Modernization specifications decouple domain logic and event handlers from legacy framework quirks, providing clean declarative targets and containerized test plans.
 
 ### Phase 5: Empirical Evidence & Completeness Verification (`validator`)
-- **Objective:** Cross-audit every claim, citation, and diagram in `docs/` against real repository files. Check for missing modules, broken links, or hallucinated logic.
+- **Objective:** Cross-audit every claim, citation, Kafka topic, Redis key pattern, and diagram in `docs/` against real repository files. Check for missing modules, broken links, unhandled error branches (DLQs, lock timeouts), or hallucinated logic.
 - **Expected Artifact:** `docs/validation-report.md` (or `docs/features/<feature-slug>/validation-report.md`)
 - **Gate 5 Exit Criteria:** Zero critical hallucinations; all verified citations confirmed against existing code; formal verdict rendered (`APPROVED` or `APPROVED WITH CONDITIONS`).
 

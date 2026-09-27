@@ -36,31 +36,49 @@ You operate across two primary modes:
 Follow this structured protocol to inspect the codebase:
 
 ### Step 1: API & Ingress Contract Extraction
-- Enumerate endpoints (whole repo or feature-scoped):
-  - *Feature Example (Login & MFA Flow):*
-    - `GET /account/login`: ReturnUrl handling, external provider discovery.
-    - `POST /account/login`: Credential validation, lockout check, 2FA prompt.
-    - `GET /account/mfa`: TOTP code prompt or SMS dispatch.
-    - `POST /account/mfa`: TOTP verification, recovery code fallback.
-- For each endpoint, extract:
-  - Authentication & Authorization requirements (Anonymous, Bearer token, Cookie, Required Roles).
-  - Request body & query parameters (types, validation constraints, defaults).
-  - Success responses (HTTP status code, headers, `Set-Cookie` directives, response body).
-  - Error responses (400 validation error, 401 unauthorized, 423 locked out, 429 rate limited).
+- Enumerate endpoints (REST, GraphQL, gRPC unary/streaming):
+  - *Feature Example:*
+    - `POST /api/v1/orders`: Ingress creation endpoint
+    - `gRPC OrderService.GetOrder`: Protobuf RPC method
+  - For each endpoint, extract:
+    - Authentication & Authorization requirements (Anonymous, Bearer token, Cookie, Required Roles).
+    - Request body & query parameters (types, validation constraints, defaults).
+    - Success responses (HTTP status code, headers, `Set-Cookie` directives, response body).
+    - Error responses (400 validation error, 401 unauthorized, 409 conflict, 429 rate limited).
 
-### Step 2: Database Schemas, Tables & ORM Entities
-- Inspect ORM models (EF Core, Prisma, TypeORM, SQLAlchemy, Hibernate) or migration SQL files.
-- In feature-scoped mode, extract the specific tables and columns participating in the feature:
-  - *Feature Example:* `Users` (`id`, `username`, `email_confirmed`, `is_active`), `UserCredentials` (`password_hash`, `salt`, `hash_algorithm`), `UserLockouts` (`failed_count`, `lockout_end`), `UserTokens` (`token_type`, `token_value`, `expiry`).
-  - Column types, nullability, primary/foreign keys, indexes, and cascading rules.
+### Step 2: Event Streaming & Message Contracts (Kafka / RabbitMQ / SQS)
+- For every event publisher/producer:
+  - Topic / Queue name constants and dynamic topic routing logic.
+  - Partition key selection (e.g., `orderId`, `customerId`) ensuring partition ordering.
+  - Payload serialization format: Avro schema (`.avsc`), Protobuf message (`.proto`), or JSON Schema.
+  - Producer semantics: Acknowledgement level (`acks=all`), transactional outbox integration, idempotence flags.
+- For every event consumer / worker:
+  - Consumer Group ID, concurrency/worker thread count, and partition assignment strategy.
+  - Commit policy: Manual offset acknowledgement vs. auto-commit.
+  - Deduplication & idempotency strategy (e.g. database idempotency key table, Redis token check).
+  - Failure & Poison-Pill handling: Max retries, exponential backoff, retry topics, and Dead Letter Queue (DLQ) routing.
 
-### Step 3: Domain Business Rules & Calculations
+### Step 3: Distributed Caching & In-Memory Store Contracts (Redis)
+- For every cache interaction:
+  - Key naming convention and parameters (e.g., `user:session:{userId}`, `rate_limit:{ip}:{window}`).
+  - Redis data structure utilized: String, Hash, Sorted Set (ZSET), List, or Stream (`XADD`/`XREADGROUP`).
+  - TTL (time-to-live) and sliding vs. fixed expiration policies.
+  - Invalidation triggers: Explicit deletion (`DEL`), cache stampede protection (probabilistic early expiration, mutex locking).
+  - Distributed concurrency & locking: Redis lock key (`lock:resource:{id}`), TTL safety guard, atomic acquisition (`SET NX PX`), and release script (Lua script for safe release).
+  - Pipelining, `MULTI`/`EXEC` transactions, and custom Lua scripts.
+
+### Step 4: Database Schemas, Tables & ORM Entities
+- Inspect ORM models (EF Core, Prisma, TypeORM, SQLAlchemy, Hibernate, Diesel) or migration SQL files.
+- In feature-scoped mode, extract the specific tables and columns participating in the feature.
+- Column types, nullability, primary/foreign keys, indexes, and cascading rules.
+
+### Step 5: Domain Business Rules & Distributed Calculations
 - Uncover business logic embedded in service classes, helper functions, and domain entities:
-  - *Rule 1: Credential Verification & Cryptography:* Exact hashing algorithm (Argon2id, PBKDF2, bcrypt), work factors, salt size, and constant-time comparison.
-  - *Rule 2: Account Lockout Policy:* Max failed attempts before lockout, lockout duration, sliding reset window.
-  - *Rule 3: Multi-Factor Authentication Logic:* TOTP algorithm (RFC 6238 HMAC-SHA1), time step (30s), allowed drift window, backup/recovery code format and single-use invalidation.
+  - *Rule 1: Cryptography & Credential Verification:* Exact hashing algorithm (Argon2id, PBKDF2, bcrypt), work factors, salt size, and constant-time comparison.
+  - *Rule 2: Throttling & Rate Limiting Algorithms:* Leaky bucket, token bucket, or Redis sliding-window sorted set.
+  - *Rule 3: Distributed State Transitions & Sagas:* Invariants governing status changes (`PENDING` &rarr; `CONFIRMED` &rarr; `SHIPPED`), compensating actions on failure.
   - *Rule 4: Security & Open Redirect Checks:* URL parsing rules ensuring `returnUrl` is local to the host and prevents phishing redirects.
-  - *Rule 5: Session & Token Lifecycles:* Expiration times, sliding expiration rules, remember-me duration, cookie security flags (`HttpOnly`, `SameSite=Lax`, `Secure`).
+  - *Rule 5: Idempotency & Deduplication Logic:* How duplicate requests or at-least-once message deliveries are safely detected and skipped.
 
 ---
 
@@ -72,72 +90,99 @@ Compile all extracted contracts and rules using this exact schema:
 # Contracts & Business Rules: {{projectName}}
 <!-- Scope: Whole Repository | Feature Slice: <Feature Name> -->
 
-## 1. API Endpoint Catalog
+## 1. Ingress & API Contract Catalog
 
-| Method | Path | Auth / Role | Description | Handler / Controller | Source Citation |
+| Method / Protocol | Path / RPC | Auth / Role | Description | Handler / Controller | Source Citation |
 |---|---|---|---|---|---|
-| `GET` | `/account/login` | `Anonymous` | Render login form & returnUrl validation | `AccountController.Login` | `src/Controllers/AccountController.cs#L35-L60` |
-| `POST` | `/account/login` | `Anonymous` | Validate credentials, issue cookie or 2FA challenge | `AccountController.Login` | `src/Controllers/AccountController.cs#L68-L145` |
-| `POST` | `/account/mfa/verify`| `Anonymous (ChallengeToken)` | Verify TOTP code or recovery code | `MfaController.Verify` | `src/Controllers/MfaController.cs#L40-L95` |
+| `POST` | `/api/v1/orders` | `Bearer (User)` | Create new order | `OrderController.Create` | `src/controllers/OrderController.ts#L35-L80` |
+| `gRPC` | `OrderService.GetStatus` | `Internal (mTLS)` | Query order lifecycle status | `OrderGrpcHandler.GetStatus` | `src/grpc/orderService.ts#L20-L45` |
 
 ### Detailed Endpoint Specifications
-#### `POST /account/login`
-- **Handler:** `src/Controllers/AccountController.cs#L68-L145`
-- **Authentication:** None (Public Endpoint)
-- **Rate Limiting:** 10 requests / min per IP (`src/Middleware/RateLimit.cs#L22`)
-- **Request Body (JSON / Form-Encoded):**
+#### `POST /api/v1/orders`
+- **Handler:** `src/controllers/OrderController.ts#L35-L80`
+- **Authentication:** Bearer JWT (Role: `Customer`)
+- **Rate Limiting:** 60 requests / min per IP via Redis (`src/middleware/rateLimit.ts#L15`)
+- **Request Body (JSON):**
   ```json
   {
-    "username": "string (min: 3, max: 64, required)",
-    "password": "string (required)",
-    "rememberMe": "boolean (default: false)",
-    "returnUrl": "string (optional, local URL validated)"
+    "customerId": "string (UUID, required)",
+    "items": "array of { productId: string, quantity: number (min: 1) }",
+    "idempotencyKey": "string (UUID, header: Idempotency-Key)"
   }
   ```
 - **Responses:**
-  - `200 OK`: Login successful. Sets auth cookie: `.AspNetCore.Identity.Application` (HttpOnly, Secure).
-  - `200 OK (MFA Required)`: `{ "requiresTwoFactor": true, "challengeToken": "uuid" }` (`src/Controllers/AccountController.cs#L98`)
-  - `400 Bad Request`: Validation failure on input fields (`src/Validators/LoginValidator.cs#L15`)
-  - `401 Unauthorized`: Invalid credentials. Decrements remaining attempts (`src/Services/AuthService.cs#L75`)
-  - `423 Locked`: Account is locked. Returns `{ "lockoutEnd": "2026-09-27T14:00:00Z" }` (`src/Services/AuthService.cs#L88`)
+  - `201 Created`: Order placed. Returns `{ "orderId": "uuid", "status": "PENDING" }`
+  - `400 Bad Request`: Validation failure on input fields (`src/validators/orderValidator.ts#L22`)
+  - `409 Conflict`: Duplicate idempotency key detected (`src/services/orderService.ts#L45`)
 
 ---
 
-## 2. Data Models & Entity Dictionary (Feature Slice)
+## 2. Event Streaming & Messaging Catalog (Kafka / Queues)
 
-### Entity: `User`
-- **Table Name:** `AspNetUsers` (`src/Models/User.cs#L15`)
+### Topic: `orders.events.v1`
+- **Producer Handler:** `src/events/orderProducer.ts#L30-L75`
+- **Partition Key:** `orderId` (ensures sequential partition processing per order)
+- **Serialization Format:** Apache Avro (`schemas/orders/OrderCreated.avsc#L1-L40`)
+- **Producer Configuration:** `acks=all`, `enable.idempotence=true`, `retries=5` (`src/config/kafka.ts#L25`)
+- **Payload Schema:**
+  ```json
+  {
+    "eventId": "string (UUID)",
+    "orderId": "string (UUID)",
+    "customerId": "string (UUID)",
+    "totalAmountCents": "long",
+    "timestamp": "long (epoch ms)"
+  }
+  ```
+
+### Consumer Group: `billing-service-workers`
+- **Listener Handler:** `src/workers/billingConsumer.ts#L25-L95`
+- **Subscribed Topics:** `orders.events.v1`
+- **Commit Semantics:** Manual ACK upon successful database commit (`src/workers/billingConsumer.ts#L80`)
+- **Idempotency Strategy:** Checks `processed_events` table by `eventId` before processing (`src/workers/billingConsumer.ts#L40`)
+- **Error Handling & DLQ:** 3 retries with exponential backoff (2s, 4s, 8s); unresolved poison pills routed to `orders.events.dlq` (`src/workers/billingConsumer.ts#L90`)
+
+---
+
+## 3. Distributed Cache & In-Memory Store Catalog (Redis)
+
+| Key Pattern | Data Type | TTL | Purpose | Strategy | Source Citation |
+|---|---|---|---|---|---|
+| `order:cache:{orderId}` | String (JSON) | 3600s | Fast retrieval of order state | Cache-Aside | `src/cache/orderCache.ts#L20-L45` |
+| `idempotency:{key}` | String (JSON) | 86400s | Deduplication of API submissions | Write-Through | `src/middleware/idempotency.ts#L30-L65` |
+| `rl:{ip}:{window}` | Sorted Set | 60s | Sliding-window API rate limiting | ZADD & ZREMRANGEBYSCORE | `src/cache/rateLimiter.ts#L15-L50` |
+| `lock:order:{orderId}` | String | 10s | Distributed lock preventing concurrent updates | `SET key val NX EX 10` | `src/locks/redisLock.ts#L25-L60` |
+
+---
+
+## 4. Data Models & Entity Dictionary (Feature Slice)
+
+### Entity: `Order`
+- **Table Name:** `orders` (`src/models/Order.ts#L10`)
 - **Fields:**
   | Field | Type | Nullable | Default | Description | Citation |
   |---|---|---|---|---|---|
-  | `Id` | `NVARCHAR(450)` | No | Auto-UUID | Primary Key | `src/Models/User.cs#L18` |
-  | `UserName` | `NVARCHAR(256)` | No | - | Normalized unique user login | `src/Models/User.cs#L22` |
-  | `PasswordHash` | `NVARCHAR(MAX)` | No | - | Base64-encoded PBKDF2 hash & salt | `src/Models/User.cs#L30` |
-  | `AccessFailedCount` | `INT` | No | `0` | Consecutive failed login count | `src/Models/User.cs#L42` |
-  | `LockoutEnd` | `DATETIMEOFFSET`| Yes | `NULL` | Lockout expiration timestamp | `src/Models/User.cs#L48` |
-  | `TwoFactorEnabled` | `BIT` | No | `0` | Flag indicating 2FA enforcement | `src/Models/User.cs#L55` |
+  | `id` | `UUID` | No | gen_random_uuid() | Primary Key | `src/models/Order.ts#L12` |
+  | `customer_id` | `UUID` | No | - | Foreign Key &rarr; `customers.id` | `src/models/Order.ts#L16` |
+  | `status` | `VARCHAR(32)` | No | `'PENDING'` | State machine enum | `src/models/Order.ts#L22` |
+  | `total_amount` | `BIGINT` | No | `0` | Order total in cents | `src/models/Order.ts#L28` |
+  | `created_at` | `TIMESTAMPTZ` | No | NOW() | Record creation timestamp | `src/models/Order.ts#L35` |
 
 ---
 
-## 3. Domain Business Rules Catalog
+## 5. Domain Business Rules Catalog
 
-### Rule `BR-01`: Password Hashing & Verification
-- **Description:** Passwords are never stored in plaintext. Hashed using PBKDF2 with HMAC-SHA256, 100,000 iterations, and a 128-bit cryptographically secure salt.
-- **Verification Logic:** Constant-time byte comparison (`CryptographicOperations.FixedTimeEquals`) to prevent timing side-channel attacks.
-- **Source Citation:** `src/Security/PasswordHasher.cs#L45-L90`
+### Rule `BR-01`: Distributed Idempotency Enforcement
+- **Description:** Duplicate requests within 24 hours sharing an `Idempotency-Key` return the cached response without re-executing domain transactions or producing duplicate Kafka events.
+- **Source Citation:** `src/middleware/idempotency.ts#L25-L70`
 
-### Rule `BR-02`: Account Lockout & Throttling Policy
-- **Description:** An account is locked for 15 minutes after 5 consecutive failed login attempts within a 1-hour window.
-- **Reset Logic:** A successful login immediately resets `AccessFailedCount` to 0.
-- **Source Citation:** `src/Security/LockoutManager.cs#L30-L75`
+### Rule `BR-02`: Distributed Concurrency Guard (Redis Mutex)
+- **Description:** Order modifications must acquire a Redis distributed lock (`lock:order:{orderId}`) with a 10s TTL before executing database mutations. Released in a `finally` block using atomic Lua comparison.
+- **Source Citation:** `src/locks/redisLock.ts#L30-L65`
 
-### Rule `BR-03`: Open Redirect Defense on `returnUrl`
-- **Description:** The `returnUrl` parameter must be strictly local (e.g. `Url.IsLocalUrl(returnUrl)`). If external or malformed, the system falls back to `/`.
-- **Source Citation:** `src/Controllers/AccountController.cs#L150-L165`
-
-### Rule `BR-04`: Multi-Factor TOTP Validation Window
-- **Description:** TOTP verification checks the current 30-second time step and ±1 adjacent step (total window of 90 seconds) to account for client clock drift.
-- **Source Citation:** `src/Security/TotpProvider.cs#L50-L82`
+### Rule `BR-03`: Event Publication & Outbox Guarantee
+- **Description:** Orders cannot be committed without an accompanying `OrderCreatedEvent` record written to the outbox or published to Kafka with `acks=all`.
+- **Source Citation:** `src/events/orderProducer.ts#L45-L80`
 ```
 
 ---
