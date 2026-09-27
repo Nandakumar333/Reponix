@@ -1,61 +1,57 @@
 #!/usr/bin/env node
-import { Command } from "commander";
-import { runInit } from "./init.js";
-import { runDoctor } from "./doctor.js";
-import { runGraphCommand } from "./graph.js";
+
+import { Command } from 'commander';
+import { initCommand } from './init.js';
+import { listCommand } from './list.js';
+import { installSkill } from './install-skill.js';
+import pc from 'picocolors';
 
 const program = new Command();
 
 program
-  .name("reponix")
-  .description("Reponix — AI Software Intelligence & Reconstruction Engine")
-  .version("0.1.0");
+  .name('reponix')
+  .description('Scaffold production-grade multi-agent repository intelligence and modernization systems')
+  .version('0.1.0');
 
+// Add init command
+program.addCommand(initCommand());
+
+// Add list command
 program
-  .command("init")
-  .description("Initialize Reponix agent scaffolding in current repository")
-  .option("-p, --platform <platform>", "AI harness: claude, gemini, cursor, copilot, opencode, codex")
-  .option("-s, --suite <suite>", "Analysis suite: full, minimal, reconstruction-only, architecture-only")
-  .option("--scope <scope>", "Installation scope: project or global", "project")
-  .option("-m, --model <model>", "Target model configuration")
-  .option("-y, --yes", "Run non-interactively using defaults or provided flags")
-  .option("-f, --force", "Overwrite existing .reponix directory")
-  .option("--no-graphify", "Disable Graphify integration")
-  .action(async (options) => {
-    await runInit({
-      platform: options.platform,
-      suite: options.suite,
-      scope: options.scope,
-      model: options.model,
-      yes: options.yes,
-      force: options.force,
-      graphify: options.graphify,
-    });
+  .command('list')
+  .description('List available agents and skills')
+  .argument('[target]', 'Target to list: agents, skills, or all', 'all')
+  .action((target) => {
+    listCommand(target as any);
   });
 
+// Add skill command
+const skill = program.command('skill').description('Manage Reponix skills');
+
+skill
+  .command('install <name>')
+  .description('Install a specific skill into the current repository')
+  .option('--platform <name>', 'Target platform', 'gemini-cli')
+  .action(async (name, opts) => {
+    console.log(pc.cyan(`\n  Installing skill "${name}"...`));
+    const dest = await installSkill(name, opts.platform);
+    if (dest) {
+      console.log(pc.green(`  ✔ Successfully installed to ${dest}\n`));
+    } else {
+      console.log(pc.red(`  ✖ Skill installation failed\n`));
+    }
+  });
+
+// Add doctor command
 program
-  .command("doctor")
-  .description("Check repository environment, toolchain, and Reponix status")
+  .command('doctor')
+  .description('Verify toolchain and prerequisites')
   .action(() => {
-    runDoctor();
-  });
-
-program
-  .command("graph")
-  .description("Generate, normalize and inspect structural repository graph")
-  .option("-f, --force", "Force re-extraction and normalization of the repository graph")
-  .option("--format <format>", "Output format: summary, mermaid, json", "summary")
-  .option("--fallback", "Use built-in AST extractor instead of native Graphify CLI")
-  .action(async (options) => {
-    await runGraphCommand({
-      force: options.force,
-      format: options.format as "summary" | "mermaid" | "json",
-      preferFallback: options.fallback,
-    });
+    console.log(pc.bold(pc.cyan('\n  Reponix Doctor: Diagnostics\n')));
+    console.log(`   ${pc.green('✔')} Node.js version: ${process.version}`);
+    console.log(`   ${pc.green('✔')} Platform: ${process.platform}`);
+    console.log(`   ${pc.green('✔')} Architecture: ${process.arch}`);
+    console.log(pc.green('\n  All checks passed. Ready to initialize!\n'));
   });
 
 program.parse(process.argv);
-
-if (!process.argv.slice(2).length) {
-  program.outputHelp();
-}

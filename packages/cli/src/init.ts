@@ -1,150 +1,111 @@
-import * as p from "@clack/prompts";
-import pc from "picocolors";
-import type { PlatformId, SuiteType } from "@reponix/schemas";
-import { detectStack } from "./detector.js";
-import { scaffoldReponix } from "./scaffold.js";
+import { Command } from 'commander';
+import pc from 'picocolors';
+import * as p from '@clack/prompts';
+import path from 'node:path';
+import { promptInit } from './prompts.js';
+import { renderAgents } from './engine/template.js';
+import { installSkill } from './install-skill.js';
+import { saveConfig } from './engine/manifest.js';
+import type { Platform, Scope, Suite, InitAnswers } from './types.js';
 
-export interface InitOptions {
-  platform?: PlatformId;
-  scope?: "project" | "global";
-  suite?: SuiteType;
-  model?: string;
-  yes?: boolean;
-  force?: boolean;
-  graphify?: boolean;
-}
+export function initCommand(): Command {
+  const cmd = new Command('init');
 
-export async function runInit(options: InitOptions = {}): Promise<void> {
-  const isNonInteractive = options.yes || Boolean(options.platform && options.suite);
+  cmd
+    .description('Scaffold Reponix repository intelligence and modernization agents')
+    .option('-y, --yes', 'Skip prompts and accept defaults')
+    .option('--platform <name>', 'Target AI platform (gemini-cli|claude-code|cursor|opencode|copilot|codex|continue|windsurf)')
+    .option('--scope <scope>', 'Installation scope: project or global')
+    .option('--project', 'Install into current project repository')
+    .option('--global', 'Install into user home directory')
+    .option('--suite <type>', 'Suite: intelligence, modernization, or full')
+    .option('--dry-run', 'Preview changes without writing files to disk')
+    .option('--target-dir <path>', 'Custom directory to initialize')
+    .action(async (opts) => {
+      const targetDir = opts.targetDir ? path.resolve(opts.targetDir) : process.cwd();
+      const dryRun = Boolean(opts.dryRun);
 
-  const detected = detectStack(process.cwd());
+      console.log(pc.bold(pc.cyan('\n  ╔══════════════════════════════════════════╗')));
+      console.log(pc.bold(pc.cyan('  ║          Reponix Agent Scaffolder        ║')));
+      console.log(pc.bold(pc.cyan('  ╚══════════════════════════════════════════╝\n')));
 
-  if (isNonInteractive) {
-    const config = {
-      version: "1.0",
-      platform: options.platform || "gemini",
-      scope: options.scope || "project",
-      suite: options.suite || "full",
-      model: options.model,
-      project: {
-        name: detected.projectName,
-        language: detected.languages,
-        framework: detected.frameworks,
-      },
-      graphify: {
-        enabled: options.graphify ?? true,
-        autoInstall: true,
-      },
-      outputDirectory: ".reponix",
-    };
+      if (dryRun) {
+        console.log(pc.yellow('  [DRY RUN] No files will be written to disk.\n'));
+      }
 
-    const result = await scaffoldReponix(config, { force: options.force });
-    console.log(pc.green(`✔ Reponix initialized successfully! (${result.createdFiles.length} files created)`));
-    return;
-  }
+      let scope: Scope = 'project';
+      if (opts.global) scope = 'global';
+      else if (opts.project) scope = 'project';
+      else if (opts.scope === 'global' || opts.scope === 'project') scope = opts.scope;
 
-  p.intro(pc.bgCyan(pc.black(" REPONIX — AI Software Intelligence & Reconstruction Engine ")));
+      const platform = opts.platform as Platform | undefined;
+      const suite = opts.suite as Suite | undefined;
 
-  p.note(
-    `Project: ${pc.bold(detected.projectName)}\n` +
-      `Languages: ${pc.cyan(detected.languages.join(", ") || "None detected")}\n` +
-      `Frameworks: ${pc.cyan(detected.frameworks.join(", ") || "None detected")}`,
-    "Repository Detected"
-  );
+      let answers: InitAnswers;
 
-  const scope = (await p.select({
-    message: "Where should REPONIX be installed?",
-    options: [
-      { value: "project", label: "Project", hint: "Local repository (.reponix/)" },
-      { value: "global", label: "Global", hint: "User home directory" },
-    ],
-    initialValue: options.scope || "project",
-  })) as "project" | "global";
+      if (opts.yes) {
+        // Non-interactive defaults
+        const resolvedPlatform: Platform = platform || 'gemini-cli';
+        const resolvedSuite: Suite = suite || 'modernization';
+        const coreAgents = [
+          'orchestrator',
+          'repo-analyst',
+          'arch-mapper',
+          'code-inspector',
+          'modernizer',
+          'validator',
+        ];
 
-  if (p.isCancel(scope)) {
-    p.cancel("Initialization cancelled.");
-    return;
-  }
+        answers = {
+          platform: resolvedPlatform,
+          scope,
+          suite: resolvedSuite,
+          projectName: path.basename(targetDir),
+          techStack: ['auto-detect'],
+          model: 'gemini-3.8-flash',
+          coreAgents,
+          optionalAgents: [],
+          installedSkills: ['graphify', 'arch-review', 'modernization'],
+        };
+      } else {
+        answers = await promptInit({
+          platform,
+          scope,
+          suite,
+          projectName: path.basename(targetDir),
+        });
+      }
 
-  const platform = (await p.select({
-    message: "Select AI coding harness:",
-    options: [
-      { value: "gemini", label: "Gemini CLI", hint: ".gemini/agents/ & GEMINI.md" },
-      { value: "claude", label: "Claude Code", hint: ".claude/agents/ & CLAUDE.md" },
-      { value: "cursor", label: "Cursor", hint: ".cursor/rules/*.mdc" },
-      { value: "copilot", label: "GitHub Copilot", hint: ".github/agents/ & instructions" },
-      { value: "opencode", label: "OpenCode", hint: ".opencode/agents/" },
-      { value: "codex", label: "OpenAI Codex", hint: "AGENTS.md & .codex/" },
-    ],
-    initialValue: options.platform || "gemini",
-  })) as PlatformId;
+      const s = p.spinner();
+      s.start('Rendering agent configurations and platform files...');
 
-  if (p.isCancel(platform)) {
-    p.cancel("Initialization cancelled.");
-    return;
-  }
+      try {
+        const writtenAgents = await renderAgents(answers, { dryRun, targetDir });
 
-  const suite = (await p.select({
-    message: "Select Analysis Suite:",
-    options: [
-      { value: "full", label: "Full Archaeological Suite (All 13 Agents)", hint: "Recommended" },
-      { value: "minimal", label: "Minimal (Cartographer, Architecture, Code)", hint: "Fast start" },
-      { value: "reconstruction-only", label: "Reconstruction Suite", hint: "Architecture + Reconstruction" },
-      { value: "architecture-only", label: "Architecture Only", hint: "Topology & Component Maps" },
-    ],
-    initialValue: options.suite || "full",
-  })) as SuiteType;
+        for (const skill of answers.installedSkills) {
+          await installSkill(skill, answers.platform, answers.scope, { dryRun, targetDir });
+        }
 
-  if (p.isCancel(suite)) {
-    p.cancel("Initialization cancelled.");
-    return;
-  }
+        const configFile = saveConfig(answers, targetDir, dryRun);
 
-  const installGraphify = await p.confirm({
-    message: "Enable Graphify AST & Structural Graph extraction?",
-    initialValue: options.graphify ?? true,
-  });
+        s.stop(pc.green('Setup completed successfully!'));
 
-  if (p.isCancel(installGraphify)) {
-    p.cancel("Initialization cancelled.");
-    return;
-  }
+        console.log(pc.bold('\n  Written Files:'));
+        for (const file of writtenAgents) {
+          console.log(`   ${pc.green('✔')} ${file}`);
+        }
+        console.log(`   ${pc.green('✔')} ${configFile}\n`);
 
-  const s = p.spinner();
-  s.start("Generating Reponix agent scaffolding...");
+        console.log(pc.bold(pc.cyan('  Next Steps:')));
+        console.log(`   1. Open your AI coding harness (${pc.bold(answers.platform)}).`);
+        console.log(`   2. Invoke the ${pc.bold('orchestrator')} agent to begin discovery:`);
+        console.log(pc.gray('      "Analyze this repository and generate system architecture."\n'));
+      } catch (err: any) {
+        s.stop(pc.red('Initialization failed.'));
+        console.error(pc.red(`\n  Error: ${err.message}\n`));
+        process.exit(1);
+      }
+    });
 
-  try {
-    const config = {
-      version: "1.0",
-      platform,
-      scope,
-      suite,
-      model: options.model,
-      project: {
-        name: detected.projectName,
-        language: detected.languages,
-        framework: detected.frameworks,
-      },
-      graphify: {
-        enabled: Boolean(installGraphify),
-        autoInstall: true,
-      },
-      outputDirectory: ".reponix",
-    };
-
-    const result = await scaffoldReponix(config, { force: options.force });
-    s.stop(`Scaffolded ${result.createdFiles.length} files successfully!`);
-
-    p.outro(
-      `${pc.green("✔")} Reponix initialized for ${pc.cyan(platform)} (${suite} suite).\n\n` +
-        `Next steps:\n` +
-        `  1. Inspect configuration in ${pc.bold(".reponix/config.yaml")}\n` +
-        `  2. Run archaeology scan: ${pc.cyan("npx reponix scan")}\n` +
-        `  3. Check status: ${pc.cyan("npx reponix status")}`
-    );
-  } catch (err: any) {
-    s.stop("Initialization failed.");
-    p.log.error(err.message || String(err));
-    process.exit(1);
-  }
+  return cmd;
 }

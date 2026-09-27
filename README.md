@@ -1,90 +1,104 @@
 # Reponix
 
-> **AI Repository Archaeology, Software Intelligence & Reconstruction Engine**
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 
-Reponix is a portable AI agent scaffolding and repository intelligence platform. It analyzes existing codebases, extracts structural graphs, builds semantic knowledge, and produces target-neutral reconstruction blueprints so target AI coding agents can reimplement or modernize software in any target language and framework.
-
----
-
-## 🚀 Quick Start
-
-### Installation & Initialization
-
-In any target repository, run:
+Scaffold a production-grade **repository intelligence & modernization multi-agent AI system** into any codebase in 30 seconds.
 
 ```bash
 npx reponix init
 ```
 
-Or initialize non-interactively with specific flags:
+---
 
-```bash
-# Initialize for Claude Code with full analysis suite
-npx reponix init --platform claude --suite full --yes
+## What It Does
 
-# Initialize for Gemini CLI with minimal suite
-npx reponix init --platform gemini --suite minimal --yes
+`npx reponix init` guides you through a streamlined setup process and writes a complete multi-agent repository intelligence and modernization system into your workspace:
 
-# Initialize for Cursor
-npx reponix init --platform cursor --suite full --yes
+1. **Launch:** Run `npx reponix init`
+2. **Scope:** Choose **project** (current repository) or **global** (user home directory)
+3. **Platform:** Select your AI coding harness (Claude Code, Gemini CLI, Cursor, OpenCode, GitHub Copilot, Codex, Continue, Windsurf)
+4. **Agent Suite:** Choose **Modernization Suite** (Orchestrator + Intelligence agents + Modernizer) or **Intelligence Suite** (Analysis only)
+5. **Setup:** Reponix renders platform-native agent files, installs selected skills, and saves configuration into `reponix.config.json`
+
+---
+
+## Agent System
+
+Reponix deploys specialized agents designed for deep repository archaeology and system modernization:
+
+```
+User → Orchestrator
+         │
+         ├─► [1. Repo Analyst]      (Inventory: stack, layout, dependencies, configs)
+         │
+         ├─► [2. Arch Mapper]       (Topology: components, data flows, Mermaid diagrams)
+         │
+         ├─► [3. Code Inspector]    (Contracts: APIs, database schemas, business rules)
+         │
+         ├─► [4. Modernizer]        (Blueprints: target-neutral specs, refactoring roadmap)
+         │
+         └─► [5. Validator]         (Verification: source citations, gap analysis)
 ```
 
-### Environment Check
+### Core Agents
 
-Verify your toolchain and project prerequisites:
+| Agent | Role | Output Artifact |
+|---|---|---|
+| **Orchestrator** | Coordinates the entire intelligence and modernization lifecycle. All sub-agents report through it. | Synthesis & Roadmaps |
+| **Repo Analyst** | Discovers stack, dependencies, manifest files, directory topologies, and build tools. | `docs/inventory.md` |
+| **Arch Mapper** | Maps system topology, service boundaries, data flows, and renders visual Mermaid diagrams. | `docs/architecture.md` |
+| **Code Inspector** | Extracts REST/GraphQL endpoints, database schemas/migrations, domain entities, and core business rules. | `docs/contracts.md` |
+| **Modernizer** | Produces target-neutral reconstruction blueprints, API specifications, and phased refactoring plans. | `docs/reconstruction-spec.md` |
+| **Validator** | Audits generated documentation and migration blueprints against real source code evidence to guarantee zero hallucination. | `docs/validation-report.md` |
+
+### Built-in Skills
+
+| Skill | Role |
+|---|---|
+| **`graphify`** | Code relationship extraction, call trees, and import graph queries. |
+| **`arch-review`** | Architectural fitness checks, layer separation validation, and Mermaid visualization. |
+| **`modernization`** | Target-neutral specification formatting and migration blueprint generator. |
+
+---
+
+## Supported Platforms
+
+| Platform | Agent File Location | Root Instructions |
+|---|---|---|
+| **Gemini CLI** | `.gemini/agents/*.md` | `GEMINI.md` |
+| **Claude Code** | `.claude/agents/*.md` | `CLAUDE.md` |
+| **Cursor** | `.cursor/rules/*.mdc` | `.cursorrules` |
+| **OpenCode** | `.opencode/agents/*.md` | `.opencode/instructions.md` |
+| **GitHub Copilot** | `.github/instructions/*.instructions.md` | `AGENTS.md` |
+| **GitHub Copilot CLI** | `.github/agents/*.agent.md` | `AGENTS.md` |
+| **OpenAI Codex** | `.codex/agents/*.md` | `AGENTS.md` (merged) |
+| **Continue** | `.continue/prompts/*.md` | — |
+| **Windsurf** | `.windsurf/rules/*.md` | `.windsurf/rules.md` |
+
+---
+
+## Non-Interactive & Flag Usage
 
 ```bash
-npx reponix doctor
+# Initialize for Claude Code with Modernization Suite
+npx reponix init --platform claude-code --suite modernization --yes
+
+# Initialize for Gemini CLI non-interactively
+npx reponix init --platform gemini-cli --yes
+
+# Preview files without writing to disk
+npx reponix init --platform cursor --dry-run
 ```
 
 ---
 
-## 🏛 Architecture & Packages
-
-Reponix is structured as a modular TypeScript monorepo:
-
-- **`packages/schemas`** (`@reponix/schemas`): Zod schemas and TypeScript type declarations for agents, skills, configs, manifests, status, evidence, and structured handoffs.
-- **`packages/templates`** (`@reponix/templates`): Handlebars template compiler and generic agent templates (`.md.hbs`) for 13 semantic archaeology agents.
-- **`packages/adapters`** (`@reponix/adapters`): Platform-native adapters transforming generic agents into platform directories for:
-  - Claude Code (`.claude/agents/*.md`, `CLAUDE.md`)
-  - Gemini CLI (`.gemini/agents/*.md`, `GEMINI.md`)
-  - Cursor (`.cursor/rules/*.mdc`, `.cursorrules`)
-  - OpenCode (`.opencode/agents/*.md`, `.opencode/instructions.md`)
-  - GitHub Copilot (`.github/agents/*.md`, `.github/copilot-instructions.md`)
-  - OpenAI Codex (`.codex/agents/*.md`, `AGENTS.md`)
-- **`packages/core`** (`@reponix/core`): Central registry of agents and skills with dependency resolution and analysis suites (`full`, `minimal`, `reconstruction-only`, `architecture-only`).
-- **`packages/cli`** (`reponix`): The command-line tool featuring repository stack detection and the interactive scaffolding engine.
-
----
-
-## 🤖 The 13 Semantic Archaeology Agents
-
-1. **`reponix-orchestrator`**: Master coordinator managing state transitions, evidence verification, and reconstruction pipelines.
-2. **`repository-analyst`**: Technology stack, directory layout, and package manifest inventory.
-3. **`architecture-agent`**: System topology, component boundaries, and visual Mermaid diagrams.
-4. **`code-agent`**: Symbol inventory, public interfaces, domain models, and core algorithms.
-5. **`api-agent`**: External contracts, REST routes, GraphQL, gRPC, and message queues.
-6. **`database-agent`**: Database tables, columns, relations, migrations, and ORM persistence models.
-7. **`feature-agent`**: End-to-end capability mapping linking user actions to code and tests.
-8. **`workflow-agent`**: Transaction lifecycles, state machines, queues, and compensation logic.
-9. **`business-rule-agent`**: Domain validation constraints, thresholds, and calculation algorithms.
-10. **`security-agent`**: Authentication schemes, authorization models, and automatic secret redaction.
-11. **`testing-agent`**: Test suite catalog and behavior verification matrices.
-12. **`reconstruction-agent`**: Target-neutral specifications and implementation blueprints.
-13. **`validator-agent`**: Cross-checking evidence, resolving contradictions, and identifying gaps.
-
----
-
-## 🛠 Development
+## Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Build all packages
+# Build the CLI package and sync templates/skills
 npm run build
 
-# Run unit and integration tests
+# Run test suite
 npm test
 ```
 

@@ -2,13 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "composite": false
   },
-  "references": [
-    { "path": "../schemas" },
-    { "path": "../templates" },
-    { "path": "../adapters" },
-    { "path": "../core" }
-  ],
   "include": ["src/**/*"]
 }
