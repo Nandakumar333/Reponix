@@ -1,18 +1,18 @@
 {
-  "name": "reponix-workspace",
-  "version": "0.1.0",
+  "name": "reponix-monorepo",
+  "version": "1.0.0",
   "private": true,
-  "description": "Reponix — AI Software Intelligence & Reconstruction Engine",
-  "author": "Reponix Team",
+  "description": "Reponix — Multi-agent AI Repository Intelligence & Modernization Scaffolder",
   "license": "Apache-2.0",
   "workspaces": [
-    "packages/*"
+    "packages/cli"
   ],
   "scripts": {
-    "build": "tsc --build",
-    "clean": "tsc --build --clean",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "build": "npm run build --workspace=packages/cli",
+    "dev": "npm run dev --workspace=packages/cli",
+    "test": "npm run test --workspace=packages/cli",
+    "lint": "npm run lint --workspace=packages/cli",
+    "typecheck": "npm run typecheck --workspace=packages/cli"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
