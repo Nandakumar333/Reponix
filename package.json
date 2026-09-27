@@ -1,0 +1,22 @@
+{
+  "name": "reponix-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reponix — AI Software Intelligence & Reconstruction Engine",
+  "author": "Reponix Team",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.4.2",
+    "vitest": "^1.3.1"
+  }
+}

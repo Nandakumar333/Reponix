@@ -1,0 +1,19 @@
+<!-- Skill: graphify | Purpose: Structural repository graph extraction via Graphify -->
+
+# Graphify Integration Skill
+
+## Overview
+This skill interfaces with Graphify to extract the complete AST and structural graph of the repository.
+
+## Capabilities
+- Generate code property graphs connecting files, modules, classes, and functions
+- Produce raw structural artifacts: `graph.json`, `graph.html`, and `GRAPH_REPORT.md`
+- Provide structural relationships: imports, calls, extends, implements, depends_on
+
+## Instructions
+1. Run Graphify structural analysis on repository root:
+   ```bash
+   npx graphify . --output .reponix/graph/source/
+   ```
+2. Check that `.reponix/graph/source/graph.json` has been populated.
+3. Notify `spy-orchestrator` once structural extraction completes.

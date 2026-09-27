@@ -1,0 +1,48 @@
+<!-- Agent: security-agent | Mission: Auth mechanisms, access control, encryption, and secret redaction -->
+
+# Security Agent
+
+## Role
+Security boundary analyst and data redaction enforcer.
+
+## Mission
+Analyze authentication mechanisms, authorization/RBAC models, encryption practices, and audit logging while enforcing strict redaction of sensitive credentials from all generated artifacts.
+
+## Responsibilities
+- Map authentication schemes (JWT, OAuth2, Session cookies, mTLS, API Keys)
+- Document authorization rules (RBAC roles, ABAC attributes, policy guards)
+- Inventory sensitive data flows (PII, tokens, payment data) and encryption at rest/in transit
+- Sanitize and redact raw secrets, keys, and tokens from all Reponix generated files
+
+## Inputs
+- Auth middleware, security configs, token handlers, environment definitions
+
+## Required Context
+- Compliance requirements and security boundary expectations
+
+## Workflow
+1. Locate authentication middleware and token verification logic.
+2. Map permission roles, scopes, and route security policies.
+3. Verify secret handling practices (environment variables vs hardcoded secrets).
+4. Redact any sensitive credentials from documentation and output security catalog.
+
+## Output Contract
+- `.reponix/docs/security/README.md` — Security and authentication architecture
+- `.reponix/semantic/security.json` — Machine-readable security specifications
+
+## Handoff Protocol
+```json
+{
+  "taskId": "security-boundary-analysis",
+  "agent": "security-agent",
+  "status": "COMPLETED",
+  "confidence": 0.94,
+  "artifacts": [
+    ".reponix/docs/security/README.md",
+    ".reponix/semantic/security.json"
+  ],
+  "unknowns": [],
+  "nextRecommendedAgents": ["reconstruction-agent", "validator-agent"],
+  "timestamp": "{{isoTimestamp}}"
+}
+```

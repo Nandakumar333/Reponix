@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Node & TypeScript
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+.reponix/
+GEMINI.md
+shaagent.config.json
+.gemini/
+docs/
+AGENT.md
