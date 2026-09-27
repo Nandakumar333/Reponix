@@ -31,7 +31,7 @@ describe("Platform Adapters", () => {
     expect(adapter).toBeInstanceOf(ClaudeAdapter);
 
     const file = adapter.renderAgent(spyOrchestratorAgent);
-    expect(file.relativePath).toBe(".claude/agents/spy-orchestrator.md");
+    expect(file.relativePath).toBe(".claude/agents/reponix-orchestrator.md");
     expect(file.content).toContain("# SPY Orchestrator");
 
     const rootFiles = adapter.renderRootInstructions([spyOrchestratorAgent]);
@@ -44,11 +44,11 @@ describe("Platform Adapters", () => {
     expect(adapter).toBeInstanceOf(GeminiAdapter);
 
     const file = adapter.renderAgent(spyOrchestratorAgent);
-    expect(file.relativePath).toBe(".gemini/agents/spy-orchestrator.md");
+    expect(file.relativePath).toBe(".gemini/agents/reponix-orchestrator.md");
 
     const rootFiles = adapter.renderRootInstructions([spyOrchestratorAgent]);
     expect(rootFiles[0].relativePath).toBe("GEMINI.md");
-    expect(rootFiles[0].content).toContain("@.gemini/agents/spy-orchestrator.md");
+    expect(rootFiles[0].content).toContain("@.gemini/agents/reponix-orchestrator.md");
   });
 
   it("Cursor adapter generates .cursor/rules/*.mdc with frontmatter", () => {
@@ -56,7 +56,7 @@ describe("Platform Adapters", () => {
     expect(adapter).toBeInstanceOf(CursorAdapter);
 
     const file = adapter.renderAgent(spyOrchestratorAgent);
-    expect(file.relativePath).toBe(".cursor/rules/spy-orchestrator.mdc");
+    expect(file.relativePath).toBe(".cursor/rules/reponix-orchestrator.mdc");
     expect(file.content).toContain("---");
     expect(file.content).toContain("description:");
     expect(file.content).toContain("alwaysApply: false");
@@ -70,7 +70,7 @@ describe("Platform Adapters", () => {
     expect(adapter).toBeInstanceOf(OpenCodeAdapter);
 
     const file = adapter.renderAgent(spyOrchestratorAgent);
-    expect(file.relativePath).toBe(".opencode/agents/spy-orchestrator.md");
+    expect(file.relativePath).toBe(".opencode/agents/reponix-orchestrator.md");
 
     const rootFiles = adapter.renderRootInstructions([spyOrchestratorAgent]);
     expect(rootFiles[0].relativePath).toBe(".opencode/instructions.md");
@@ -81,7 +81,7 @@ describe("Platform Adapters", () => {
     expect(adapter).toBeInstanceOf(CopilotAdapter);
 
     const file = adapter.renderAgent(spyOrchestratorAgent);
-    expect(file.relativePath).toBe(".github/agents/spy-orchestrator.md");
+    expect(file.relativePath).toBe(".github/agents/reponix-orchestrator.md");
 
     const rootFiles = adapter.renderRootInstructions([spyOrchestratorAgent]);
     expect(rootFiles[0].relativePath).toBe(".github/copilot-instructions.md");
@@ -92,7 +92,7 @@ describe("Platform Adapters", () => {
     expect(adapter).toBeInstanceOf(CodexAdapter);
 
     const file = adapter.renderAgent(spyOrchestratorAgent);
-    expect(file.relativePath).toBe(".codex/agents/spy-orchestrator.md");
+    expect(file.relativePath).toBe(".codex/agents/reponix-orchestrator.md");
 
     const rootFiles = adapter.renderRootInstructions([spyOrchestratorAgent]);
     expect(rootFiles[0].relativePath).toBe("AGENTS.md");

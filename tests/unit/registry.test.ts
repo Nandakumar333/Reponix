@@ -9,7 +9,7 @@ describe("Agent & Skill Registry", () => {
   it("contains exactly 13 core/optional archaeology agents", () => {
     expect(allAgents.length).toBe(13);
     const agentIds = allAgents.map((a) => a.id);
-    expect(agentIds).toContain("spy-orchestrator");
+    expect(agentIds).toContain("reponix-orchestrator");
     expect(agentIds).toContain("repository-analyst");
     expect(agentIds).toContain("architecture-agent");
     expect(agentIds).toContain("code-agent");
@@ -40,7 +40,7 @@ describe("Agent & Skill Registry", () => {
   it("resolves the minimal suite with required dependencies", () => {
     const resolved = resolveSuite("minimal");
     const agentIds = resolved.agents.map((a) => a.id);
-    expect(agentIds).toContain("spy-orchestrator");
+    expect(agentIds).toContain("reponix-orchestrator");
     expect(agentIds).toContain("repository-analyst");
     expect(agentIds).toContain("architecture-agent");
     expect(agentIds).toContain("code-agent");

@@ -115,9 +115,9 @@ describe("Schemas & Validation Layer", () => {
       suite: "full",
       agents: [
         {
-          id: "spy-orchestrator",
+          id: "reponix-orchestrator",
           name: "SPY Orchestrator",
-          path: ".claude/agents/spy-orchestrator.md",
+          path: ".claude/agents/reponix-orchestrator.md",
           optional: false,
         },
       ],

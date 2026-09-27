@@ -57,7 +57,7 @@ ${rawContent}
 
 ## Cursor Operating Instructions
 When prompted for repository archaeology, reconstruction, or analysis, follow the rule definitions in \`.cursor/rules/\`.
-Coordinate through \`spy-orchestrator.mdc\`.
+Coordinate through \`reponix-orchestrator.mdc\`.
 `;
 
     return [

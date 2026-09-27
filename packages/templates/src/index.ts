@@ -157,7 +157,7 @@ Platform: **{{platformName}}**
 {{/each}}
 
 ## Operating Guidelines
-1. Coordinate via \`spy-orchestrator\`.
+1. Coordinate via \`reponix-orchestrator\`.
 2. Do not invent facts or create ungrounded documentation. Every claim must have verifiable evidence.
 3. Keep all findings in \`.reponix/\`.
 4. Output structured handoffs between subagents.

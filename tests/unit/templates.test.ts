@@ -20,7 +20,7 @@ describe("Generic Templates Engine", () => {
     expect(result).toBe("ALICE is Boss | a, b, c");
   });
 
-  it("renders spy-orchestrator agent markdown with required sections", () => {
+  it("renders reponix-orchestrator agent markdown with required sections", () => {
     const rendered = renderAgent(spyOrchestratorAgent, {
       projectName: "TestService",
       platform: "gemini",
@@ -54,7 +54,7 @@ describe("Generic Templates Engine", () => {
 
     expect(rendered).toContain("PaymentGateway");
     expect(rendered).toContain("Claude Code");
-    expect(rendered).toContain("spy-orchestrator");
+    expect(rendered).toContain("reponix-orchestrator");
     expect(rendered).toContain("repository-analyst");
   });
 });

@@ -55,7 +55,7 @@ export class CodexAdapter implements PlatformAdapter {
 ${agentSummaries}
 
 ## Codex Execution Guide
-When operating on this repository, coordinate with \`spy-orchestrator\` and consult \`.reponix/\` for verified structural knowledge.
+When operating on this repository, coordinate with \`reponix-orchestrator\` and consult \`.reponix/\` for verified structural knowledge.
 `;
 
     return [

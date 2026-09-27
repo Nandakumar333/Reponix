@@ -5,14 +5,14 @@ import { allSkills } from "./skills.js";
 const SUITE_AGENT_IDS: Record<SuiteType, string[]> = {
   full: allAgents.map((a) => a.id),
   minimal: [
-    "spy-orchestrator",
+    "reponix-orchestrator",
     "repository-analyst",
     "architecture-agent",
     "code-agent",
     "validator-agent",
   ],
   "architecture-only": [
-    "spy-orchestrator",
+    "reponix-orchestrator",
     "repository-analyst",
     "architecture-agent",
     "code-agent",
@@ -21,7 +21,7 @@ const SUITE_AGENT_IDS: Record<SuiteType, string[]> = {
     "validator-agent",
   ],
   "reconstruction-only": [
-    "spy-orchestrator",
+    "reponix-orchestrator",
     "repository-analyst",
     "architecture-agent",
     "code-agent",

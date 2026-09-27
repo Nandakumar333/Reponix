@@ -54,7 +54,7 @@ export class GeminiAdapter implements PlatformAdapter {
 ## Agent Imports
 ${agentImports}
 
-Start by consulting the \`spy-orchestrator\` instructions when initiating archaeological investigations.
+Start by consulting the \`reponix-orchestrator\` instructions when initiating archaeological investigations.
 `;
 
     return [
