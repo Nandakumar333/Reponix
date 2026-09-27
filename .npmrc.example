@@ -1,0 +1,4 @@
+# Reponix npmrc template
+# Copy to .npmrc and set your NPM_TOKEN environment variable
+registry=https://registry.npmjs.org/
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}

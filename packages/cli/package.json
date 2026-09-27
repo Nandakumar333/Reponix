@@ -1,6 +1,6 @@
 {
   "name": "reponix",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scaffold production-grade multi-agent repository intelligence and modernization systems",
   "type": "module",
   "bin": {
