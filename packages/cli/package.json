@@ -1,0 +1,31 @@
+{
+  "name": "reponix",
+  "version": "0.1.0",
+  "description": "Reponix — AI Software Intelligence & Reconstruction Engine CLI",
+  "type": "module",
+  "bin": {
+    "reponix": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "@reponix/adapters": "*",
+    "@reponix/core": "*",
+    "@reponix/schemas": "*",
+    "@reponix/templates": "*",
+    "commander": "^12.0.0",
+    "picocolors": "^1.0.0",
+    "yaml": "^2.4.1"
+  }
+}
