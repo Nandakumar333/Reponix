@@ -50,4 +50,18 @@ describe('generateRootInstruction', () => {
     expect(root).toContain('.claude/agents/reponix-orchestrator.md');
     expect(root).toContain('LegacyService');
   });
+
+  it('generates instructions.md for opencode identifying primary and subagents', () => {
+    const root = generateRootInstruction(
+      ['reponix-orchestrator', 'arch-mapper'],
+      'opencode',
+      { projectName: 'ModernCloud', techStack: 'Python' }
+    );
+
+    expect(root).toContain('OpenCode Agent Instructions');
+    expect(root).toContain('reponix-orchestrator');
+    expect(root).toContain('primary');
+    expect(root).toContain('subagent');
+    expect(root).toContain('ModernCloud');
+  });
 });

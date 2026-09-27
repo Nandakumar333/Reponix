@@ -52,13 +52,16 @@ alwaysApply: false
 
 ${body}`;
 
-    case 'opencode':
+    case 'opencode': {
+      const mode = frontmatter.mode || (agentName === 'reponix-orchestrator' || agentName === 'orchestrator' ? 'primary' : 'subagent');
+      const modelLine = frontmatter.model ? `\nmodel: ${frontmatter.model}` : '';
       return `---
 description: ${description}
-mode: subagent
+mode: ${mode}${modelLine}
 ---
 
 ${body}`;
+    }
 
     case 'copilot':
     case 'copilot-cli':
@@ -108,6 +111,20 @@ ${techStack ? `Source Tech Stack: ${techStack}\n` : ''}
 ${list}
 
 Always address the **reponix-orchestrator** agent to coordinate repository discovery and reconstruction blueprints.
+`;
+    }
+
+    case 'opencode': {
+      const list = allAgents.map(a => `- **${a}**: \`.opencode/agents/${a}.md\` (${(a === 'reponix-orchestrator' || a === 'orchestrator') ? 'primary' : 'subagent'})`).join('\n');
+      return `# Reponix — OpenCode Agent Instructions
+
+Project: **${projectName}**
+${techStack ? `- **Source Stack:** ${techStack}\n` : ''}${targetStack ? `- **Target Stack:** ${targetStack}\n` : ''}
+## Configured Agents
+${list}
+
+The **reponix-orchestrator** is the **primary agent** that interacts with the user and coordinates the archaeology and modernization workflow.
+All other agents operate as specialized subagents under the orchestrator's direction.
 `;
     }
 

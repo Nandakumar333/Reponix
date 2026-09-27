@@ -74,4 +74,37 @@ describe('renderAgents and skill installation', () => {
       expect(fs.existsSync(path.join(dest, 'SKILL.md'))).toBe(true);
     }
   });
+
+  it('renders OpenCode agents with reponix-orchestrator as primary agent and subagents as subagent', async () => {
+    const answers: InitAnswers = {
+      platform: 'opencode',
+      scope: 'project',
+      suite: 'intelligence',
+      projectName: 'OpenCodeProject',
+      techStack: ['Node.js', 'Express'],
+      model: 'gemini-3.8-flash',
+      coreAgents: ['reponix-orchestrator', 'repo-analyst'],
+      optionalAgents: [],
+      installedSkills: [],
+    };
+
+    const written = await renderAgents(answers, { targetDir: tmpDir });
+    expect(written.length).toBeGreaterThanOrEqual(3); // 2 agents + instructions.md
+
+    const orchestratorPath = path.join(tmpDir, '.opencode', 'agents', 'reponix-orchestrator.md');
+    expect(fs.existsSync(orchestratorPath)).toBe(true);
+    const orchestratorContent = fs.readFileSync(orchestratorPath, 'utf-8');
+    expect(orchestratorContent).toContain('mode: primary');
+    expect(orchestratorContent).toContain('description:');
+
+    const analystPath = path.join(tmpDir, '.opencode', 'agents', 'repo-analyst.md');
+    expect(fs.existsSync(analystPath)).toBe(true);
+    const analystContent = fs.readFileSync(analystPath, 'utf-8');
+    expect(analystContent).toContain('mode: subagent');
+
+    const instructionsPath = path.join(tmpDir, '.opencode', 'instructions.md');
+    expect(fs.existsSync(instructionsPath)).toBe(true);
+    const instructionsContent = fs.readFileSync(instructionsPath, 'utf-8');
+    expect(instructionsContent).toContain('primary agent');
+  });
 });
