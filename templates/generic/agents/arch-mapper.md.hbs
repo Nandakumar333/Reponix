@@ -36,29 +36,41 @@ You operate across two scopes:
 
 Follow this step-by-step methodology to map system architecture:
 
-### Step 1: System Pattern & Tier Identification
-- Identify the architectural style: Clean Architecture, Hexagonal, MVC, Modular Monolith, or Microservices.
-- Map system tiers: Ingress / Presentation, Application / Domain Services, Persistence / Data Stores, Integration / External Gateways.
-- *Feature-Scoped Mode:* Identify the specific subset of tiers and services that participate in the target feature.
+### Step 1: System Pattern & Distributed Topology Identification
+- Identify architectural style: Clean Architecture, Hexagonal, Modular Monolith, Microservices, or **Event-Driven Architecture (EDA / CQRS)**.
+- Map system tiers and infrastructure boundaries:
+  - **Ingress / Gateway Tier:** API Gateway, Reverse Proxy, Ingress Controllers, GraphQL/REST routers, gRPC endpoints.
+  - **Application / Domain Services:** Core domain models, state machines, use case coordinators.
+  - **Distributed Caching & Session Tier:** Redis standalone/cluster/sentinel, cache-aside read/write layers, distributed lock managers.
+  - **Event Streaming & Asynchronous Messaging:** Apache Kafka clusters, topics, partition keys, consumer groups, Dead Letter Queues (DLQ), RabbitMQ exchanges/queues.
+  - **Persistence / Data Stores:** Relational DBs (PostgreSQL, SQL Server, MySQL), NoSQL, document stores, migration engines.
+  - **External Gateways & Third-Party APIs:** Identity providers, payment gateways, notification dispatchers (SMS/Email).
+- *Feature-Scoped Mode:* Identify the exact subset of synchronous services, Redis cache keys, Kafka topics, and background consumers participating in the feature slice.
 
-### Step 2: Request Lifecycle & Sequence Flow Tracing
-- For whole-repo mode: Select the 2-3 most critical end-to-end workflows.
-- *For feature mode (e.g., Login Flow, MFA Flow, Registration):*
-  - Trace the complete step-by-step sequence:
-    1. Client submits credentials / challenge payload to Ingress Controller.
-    2. Ingress validates input syntax and invokes Authentication / Domain Service.
-    3. Service queries User Store / Database for user profile, salt, and password hash.
-    4. Cryptographic verification runs (Argon2, PBKDF2, bcrypt).
-    5. Evaluation of state guards: Is user active? Is account locked out? Is email verified?
-    6. Evaluation of MFA requirement: If MFA enabled, issue temporary challenge token and redirect to `/mfa/challenge`.
-    7. If verified: Generate session cookie, Refresh Token, and JWT Access Token; emit login audit event.
-    8. Return response payload to client with security headers and cookies.
+### Step 2: Synchronous & Asynchronous Lifecycle Tracing
+- For whole-repo mode: Select the 2-3 most critical end-to-end workflows (e.g. Ingress &rarr; Cache Check &rarr; Database &rarr; Kafka Event Emission &rarr; Consumer Worker).
+- *For feature mode (e.g., Order Processing, Authentication, Payment):*
+  - Trace the complete end-to-end execution path across both synchronous and asynchronous boundaries:
+    1. Client triggers ingress (HTTP POST, gRPC call, or message arrival).
+    2. Ingress checks **Redis Distributed Cache** (Cache Hit &rarr; immediate return; Cache Miss &rarr; proceed).
+    3. Concurrency guard: If mutating shared state, trace **Redis Distributed Lock (`SET NX EX` / Redlock)** acquisition.
+    4. Domain service executes validation, state transition, and cryptographic/business calculation.
+    5. Persistence transaction commits to primary database (or writes to Transactional Outbox table).
+    6. **Event Publication:** Producer emits event to **Kafka Topic** (e.g. `orders.created.v1`) with designated partition key and schema.
+    7. **Asynchronous Consumer Execution:** Kafka consumer group reads message from topic partition, performs idempotent processing, commits offset, and routes failures to Retry / Dead Letter Queue (DLQ).
+    8. Cache invalidation or write-through update in Redis.
+    9. Final response returned to client with appropriate HTTP status codes or gRPC status.
 
-### Step 3: Asynchronous & External Integration Mapping
-- Map external touchpoints utilized by the feature:
-  - Third-party OAuth / OIDC Identity Providers (Google, Microsoft, GitHub).
-  - Multi-Factor / Notification Providers (Twilio SMS, SendGrid Email, Push Notification services).
-  - Caches and Token Stores (Redis distributed cache, distributed ticket stores).
+### Step 3: Distributed State, Messaging & Cache Strategy Mapping
+- **Distributed Caching Topology:**
+  - Caching strategy (Cache-Aside, Write-Through, Write-Behind).
+  - Cache key namespace design, TTL policies, and eviction handling.
+  - Stampede / Thundering Herd mitigation (locking, probabilistic early expiration).
+- **Event Streaming & Messaging Topologies:**
+  - Topic naming conventions, partition key strategies (ensuring per-entity ordering).
+  - Consumer group concurrency, offset commit semantics (at-least-once vs. idempotent exactly-once processing).
+  - Error isolation: Retry topics with exponential backoff and DLQ dead-letter stores.
+- **Service Mesh & Cloud Boundaries:** Kubernetes Pod / Service routing, Envoy sidecars, egress proxies.
 
 ---
 
@@ -66,9 +78,10 @@ Follow this step-by-step methodology to map system architecture:
 
 When generating Mermaid diagrams, follow these strict guardrails:
 1. **Node Label Quoting:** Always quote labels with special characters: `NodeA["Account Controller (HTTP Ingress)"]`.
-2. **Direction:** Use `graph TD` for component topology and `graph LR` for data pipelines.
-3. **Subgraphs:** Group components logically (e.g., Ingress, Domain Logic, Persistence, External).
+2. **Direction:** Use `graph TD` for component topology and `graph LR` for data/event pipelines.
+3. **Subgraphs:** Group components logically: `Ingress`, `DomainCore`, `CacheAndLocking`, `EventStreaming`, `Persistence`, `Workers`, `External`.
 4. **Sequence Diagrams:** Use explicit `participant` declarations, `autonumber`, and descriptive messages with sync (`->>`), reply (`-->>`), and async (`-)`) arrows.
+5. **Alt & Loop Blocks:** Explicitly depict cache hit vs miss branches, error retries, and Kafka DLQ fallbacks.
 
 ---
 
@@ -81,88 +94,124 @@ Compile the architecture specification using this exact schema:
 <!-- Scope: Whole Repository | Feature Slice: <Feature Name> -->
 
 ## 1. High-Level Architectural Pattern
-- **Pattern:** <e.g., Clean Architecture / ASP.NET Identity Pipeline / Fastify API>
-- **Target Feature (if scoped):** <e.g., IdentityServer Login & MFA Lifecycle>
-- **State & Session Strategy:** <e.g., Encrypted cookie authentication with Redis token store>
+- **Pattern:** <e.g., Clean Architecture with Event-Driven Slices / Microservices / CQRS>
+- **Target Feature (if scoped):** <e.g., Order Checkout & Payment Event Pipeline>
+- **State & Session Strategy:** <e.g., Redis Cluster distributed session cache with sliding TTL>
+- **Messaging Strategy:** <e.g., Apache Kafka with Transactional Outbox & Schema Registry>
 
-## 2. Component & Feature Slice Topology
+## 2. Component & Distributed Topology
 \`\`\`mermaid
 graph TD
-    subgraph Ingress ["Ingress Tier"]
-        Client["Client / Browser"]
-        AccountCtrl["Account Controller\n(Quickstart/Account/AccountController.cs)"]
+    subgraph IngressTier ["Ingress & Gateway Tier"]
+        Client["Client / Front-End"]
+        Gateway["API Gateway / Controller\n(src/controllers/OrderController.ts)"]
     end
 
-    subgraph CoreServices ["Authentication & Domain Core"]
-        SignInMgr["Sign-In Manager / AuthService"]
-        PasswordHasher["Password Hasher (Argon2 / PBKDF2)"]
-        TokenSvc["Token & Claims Service"]
+    subgraph FastPath ["Distributed Caching & Locking Tier"]
+        RedisCache[("Redis Cluster\n(Cache-Aside & Token Store)")]
+        RedisLock[("Redis Distributed Lock\n(Redlock / SET NX EX)")]
     end
 
-    subgraph DataStorage ["Persistence & Cache"]
-        UserDB[("User & Credential Store\n(PostgreSQL / SQL Server)")]
-        SessionCache[("Redis Session & Token Store")]
+    subgraph CoreServices ["Application & Domain Core"]
+        OrderSvc["Order Processing Service\n(src/services/OrderService.ts)"]
+        DomainRules["Domain Entity & State Guard\n(src/domain/Order.ts)"]
     end
 
-    subgraph External ["External Providers"]
-        SmsGateway["Twilio SMS Gateway (MFA)"]
+    subgraph EventStreaming ["Event Streaming Tier (Kafka)"]
+        KafkaProducer["Kafka Event Producer\n(src/events/OrderProducer.ts)"]
+        KafkaTopic{{"Kafka Topic: orders.events.v1\n(Partition Key: orderId)"}}
+        DLQ{{"Kafka DLQ: orders.events.dlq"}}
     end
 
-    Client --> AccountCtrl
-    AccountCtrl --> SignInMgr
-    SignInMgr --> UserDB
-    SignInMgr --> PasswordHasher
-    SignInMgr --> TokenSvc
-    SignInMgr --> SessionCache
-    SignInMgr -. "MFA Challenge" .-> SmsGateway
+    subgraph ConsumerFleet ["Background Workers & Consumers"]
+        BillingConsumer["Billing Worker\n(Group: billing-svc)"]
+        NotificationConsumer["Notification Worker\n(Group: notification-svc)"]
+    end
+
+    subgraph DataStorage ["Persistence Tier"]
+        PrimaryDB[("Primary Database\n(PostgreSQL / SQL Server)")]
+    end
+
+    subgraph External ["External Third-Party Gateways"]
+        PaymentGateway["Stripe / Payment Gateway"]
+    end
+
+    Client --> Gateway
+    Gateway <-->|"1. Check Cache / Lock"| RedisCache
+    Gateway --> OrderSvc
+    OrderSvc --> DomainRules
+    OrderSvc <-->|"2. Acquire Lock"| RedisLock
+    OrderSvc -->|"3. Write State"| PrimaryDB
+    OrderSvc -->|"4. Dispatch Event"| KafkaProducer
+    KafkaProducer -->|"Publish"| KafkaTopic
+    KafkaTopic -->|"Consume"| BillingConsumer
+    KafkaTopic -->|"Consume"| NotificationConsumer
+    BillingConsumer -. "On Poison Pill" .-> DLQ
+    BillingConsumer --> PaymentGateway
+    BillingConsumer --> PrimaryDB
 \`\`\`
 
-## 3. End-to-End Sequence Diagram (Feature Lifecycle)
-### Feature Flow: <e.g., Complete Login & MFA Challenge Lifecycle>
+## 3. End-to-End Sequence Diagram (Sync & Async Lifecycles)
+### Flow: <e.g., Order Submission, Redis Caching, and Kafka Processing>
 \`\`\`mermaid
 sequenceDiagram
     autonumber
-    actor User as User / Client
-    participant Ctrl as AccountController
-    participant Svc as SignInManager
-    participant DB as UserStore / DB
-    participant Hash as PasswordHasher
-    participant MFA as MfaService
-    participant Token as TokenService
+    actor Client as Client / Browser
+    participant API as OrderController
+    participant Cache as Redis Cache
+    participant Lock as Redis Lock Manager
+    participant Svc as OrderService
+    participant DB as PostgreSQL
+    participant Kafka as Kafka (orders.events.v1)
+    participant Worker as Billing Consumer Worker
+    participant DLQ as Kafka DLQ
 
-    User->>Ctrl: POST /account/login (username, password, rememberMe)
-    Ctrl->>Svc: PasswordSignInAsync(username, password)
-    Svc->>DB: FindByNameAsync(username)
-    DB-->>Svc: UserRecord (Salt, Hash, IsLocked, MfaEnabled)
-    
-    alt Account is Locked
-        Svc-->>Ctrl: SignInResult.LockedOut
-        Ctrl-->>User: 423 Locked (Account locked due to 5 failed attempts)
-    else Credentials Valid & MFA Required
-        Svc->>Hash: VerifyHashedPassword(password, storedHash)
-        Hash-->>Svc: Success
-        Svc->>MFA: GenerateChallengeAsync(user.Id)
-        MFA-->>Svc: MfaChallengeToken
-        Svc-->>Ctrl: SignInResult.RequiresTwoFactor
-        Ctrl-->>User: 200 OK { requiresMfa: true, challengeToken: "..." }
-    else Credentials Valid & No MFA
-        Svc->>Token: CreateUserPrincipalAsync(user)
-        Token-->>Svc: ClaimsPrincipal
-        Svc-->>Ctrl: SignInResult.Success (AuthCookie)
-        Ctrl-->>User: 200 OK (Set-Cookie: .AspNetCore.Identity.Application)
+    Client->>API: POST /api/v1/orders (payload, idempotencyKey)
+    API->>Cache: GET idempotency:{idempotencyKey}
+    alt Cached Response Exists (Duplicate Request)
+        Cache-->>API: 200 OK (Cached Response)
+        API-->>Client: 200 OK (Cached Order Payload)
+    else First-time Request
+        API->>Lock: AcquireLock(lock:order:{id}, ttl=5s)
+        Lock-->>API: LockAcquired
+        API->>Svc: ProcessOrder(payload)
+        Svc->>DB: BEGIN TX; INSERT INTO orders; COMMIT;
+        DB-->>Svc: OrderCreated (id=123)
+        Svc->>Kafka: Produce(topic="orders.events.v1", key="123", event=OrderCreatedEvent)
+        Kafka-->>Svc: Ack (partition 2, offset 4821)
+        Svc->>Cache: SET idempotency:{idempotencyKey} (ttl=86400s)
+        API->>Lock: ReleaseLock(lock:order:{id})
+        API-->>Client: 201 Created { orderId: 123, status: "PENDING_PAYMENT" }
+
+        Note over Kafka,Worker: Asynchronous Event Consumption
+        Kafka-)Worker: ConsumeMessage(OrderCreatedEvent)
+        Worker->>Worker: Validate & Process Payment
+        alt Processing Succeeded
+            Worker->>DB: UPDATE orders SET status='PAID' WHERE id=123
+            Worker-->>Kafka: CommitOffset()
+        else Retries Exhausted
+            Worker-)DLQ: PublishToDLQ(OrderCreatedEvent, errorReason)
+            Worker-->>Kafka: CommitOffset()
+        end
     end
 \`\`\`
 
-## 4. External Integrations & Boundary Crossings
-| External Service | Protocol | Purpose in Feature | Source Citation |
-|---|---|---|---|
-| `Twilio REST API` | HTTPS POST | SMS One-Time Passcode dispatch for MFA | `src/Services/TwilioSmsSender.cs#L20-L55` |
-| `Redis Session Store` | TCP / Redis | Storage of active session tickets and tokens | `src/Config/RedisStore.cs#L15-L40` |
+## 4. Distributed State & Caching Architecture
+| Cache / State Key Pattern | Storage Engine | Strategy | TTL | Invalidation Trigger | Source Citation |
+|---|---|---|---|---|---|
+| `order:cache:{id}` | Redis Cluster | Cache-Aside | 3600s | On Order Status Mutation | `src/cache/orderCache.ts#L25-L50` |
+| `lock:order:{id}` | Redis Standalone | Distributed Lock | 5s | Released in `finally` block | `src/locks/redisLock.ts#L14-L35` |
 
-## 5. Architectural Fitness & Layer Boundary Evaluation
-- **Isolation Assessment:** Does the feature cleanly separate UI/route logic from cryptographic and persistence code?
-- **Layer Violations:** <e.g., Raw SQL queries executed in `AccountController.cs#L140` instead of delegating to `IUserStore`.>
-- **Reconstruction Readiness:** Can this feature be extracted as an independent microservice or modular package?
+## 5. Event Streaming & Messaging Architecture
+| Topic / Queue Name | Producer Component | Consumer Group(s) | Partition Key | Schema / Serialization | DLQ Topic | Citation |
+|---|---|---|---|---|---|---|
+| `orders.events.v1` | `OrderProducer` | `billing-svc`, `email-svc` | `orderId` | Avro (`schemas/order.avsc`) | `orders.events.dlq` | `src/events/producer.ts#L40` |
+
+## 6. Architectural Fitness & Layer Boundary Evaluation
+- **Isolation Assessment:** Does the feature cleanly decouple synchronous HTTP handling from asynchronous event consumers?
+- **Layer Violations:** <e.g., Background Kafka listener executing direct HTTP calls back into the frontend controller.>
+- **Distributed Failure Resilience:** Are Redis connection timeouts handled with graceful database fallback? Are Kafka consumers idempotent?
+- **Reconstruction Readiness:** Can this distributed slice run independently in a containerized test harness?
 ```
 
 ---

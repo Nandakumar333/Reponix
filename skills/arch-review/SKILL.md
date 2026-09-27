@@ -40,71 +40,100 @@ When evaluating a single extracted feature (e.g., *Login Flow*, *MFA Challenge*,
   $$I = \frac{C_e}{C_a + C_e}$$
 - **Target for Feature Slices:** Extracted feature domain cores should have high stability ($I < 0.2$), depending only on pure primitives and boundary interfaces.
 
+### 1.4 Event-Driven Architecture & Messaging Fitness (Kafka / Queues)
+When evaluating event-driven systems or asynchronous messaging:
+- **Partition Key & Ordering:** Verify that events requiring strict ordering share a deterministic partition key (e.g. `orderId`, `userId`). Flag unpartitioned or randomly partitioned event streams where order matters.
+- **Consumer Idempotency:** Verify that event consumers implement deduplication (e.g., unique database constraint or Redis idempotency key check) to safely handle at-least-once delivery.
+- **Poison-Pill & DLQ Handling:** Confirm that unprocessable messages are redirected to a Dead Letter Queue (DLQ) after bounded retries with exponential backoff, preventing consumer lag head-of-line blocking.
+- **Schema Compatibility:** Ensure event payloads adhere to versioned schemas (Avro, Protobuf, JSON Schema) supporting backward/forward compatibility.
+
+### 1.5 Distributed Caching & Concurrency Fitness (Redis)
+When evaluating caching and distributed state:
+- **Cache Consistency Strategy:** Identify whether the system uses Cache-Aside, Write-Through, or Write-Behind. Verify that cache invalidation triggers on all mutation paths.
+- **Stampede & Thundering Herd Mitigation:** Verify that high-traffic cache misses do not overwhelm the database (using probabilistic early expiration or mutex locks).
+- **Distributed Mutex Safety:** When using Redis for locking:
+  - Verify that locks have an explicit TTL to prevent deadlocks on crash.
+  - Verify that release operations use atomic Lua comparison (`if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) end`) to prevent accidentally releasing another process's lock.
+
 ---
 
 ## 2. Mermaid Diagramming Standards & Syntax Guardrails
 
-### 2.1 Feature Component & Boundary Diagrams (`graph TD`)
+### 2.1 Distributed Component & Boundary Diagrams (`graph TD`)
 - Isolate the feature's active participants inside explicit subgraphs:
   ```mermaid
   graph TD
-      subgraph Ingress ["API & UI Ingress"]
-          LoginRoute["POST /account/login"]
-          MfaRoute["POST /account/mfa/verify"]
+      subgraph Ingress ["API & Ingress Tier"]
+          OrderRoute["POST /api/v1/orders"]
       end
 
-      subgraph DomainCore ["Authentication Domain Core"]
-          AuthService["Auth & Sign-In Service"]
-          LockoutEngine["Lockout & Throttling Policy"]
-          CryptoEngine["Password & TOTP Cryptography"]
+      subgraph FastPath ["Distributed Caching & Locking Tier"]
+          RedisCache[("Redis Cache")]
+          RedisLock[("Redis Distributed Lock")]
       end
 
-      subgraph PersistencePorts ["Storage & External Ports"]
-          UserRepo[("User & Credential Store")]
-          SmsGateway["Twilio SMS Gateway"]
+      subgraph DomainCore ["Order Domain Core"]
+          OrderSvc["Order Processing Service"]
+          OrderEntity["Order State Guard"]
       end
 
-      LoginRoute --> AuthService
-      MfaRoute --> AuthService
-      AuthService --> LockoutEngine
-      AuthService --> CryptoEngine
-      AuthService --> UserRepo
-      AuthService -. "MFA Challenge" .-> SmsGateway
+      subgraph EventBus ["Event Streaming Tier (Kafka)"]
+          OrderProducer["Kafka Event Producer"]
+          OrderTopic{{"Kafka: orders.events.v1"}}
+          OrderDLQ{{"Kafka DLQ: orders.events.dlq"}}
+      end
+
+      subgraph PersistencePorts ["Storage & Consumers"]
+          OrderDB[("PostgreSQL DB")]
+          BillingWorker["Billing Consumer Worker"]
+      end
+
+      OrderRoute --> OrderSvc
+      OrderSvc <--> RedisCache
+      OrderSvc <--> RedisLock
+      OrderSvc --> OrderEntity
+      OrderSvc --> OrderDB
+      OrderSvc --> OrderProducer
+      OrderProducer --> OrderTopic
+      OrderTopic --> BillingWorker
+      BillingWorker -. "On Fatal Error" .-> OrderDLQ
+      BillingWorker --> OrderDB
   ```
 
-### 2.2 Multi-Branch Sequence Diagrams (`sequenceDiagram`)
-- Model the complete lifecycle of the feature including branch conditions (`alt` / `else`):
+### 2.2 Multi-Branch Sync & Async Sequence Diagrams (`sequenceDiagram`)
+- Model the complete lifecycle of the feature across cache, database, and event topics:
   ```mermaid
   sequenceDiagram
       autonumber
-      actor User
-      participant Route as Login Controller
-      participant Svc as Auth Service
-      participant Store as User Store
-      participant Crypto as Password Hasher
+      actor Client
+      participant Route as API Gateway / Route
+      participant Cache as Redis Cache
+      participant Lock as Redis Lock
+      participant Svc as Order Service
+      participant DB as Database
+      participant Kafka as Kafka (orders.events.v1)
+      participant Worker as Billing Worker
 
-      User->>Route: POST /login (username, password)
-      Route->>Svc: authenticate(username, password)
-      Svc->>Store: findUser(username)
-      Store-->>Svc: UserEntity
+      Client->>Route: POST /orders (idempotencyKey)
+      Route->>Cache: GET idempotency:{key}
+      alt Duplicate Request Cached
+          Cache-->>Route: Cached Response
+          Route-->>Client: 200 OK (Cached)
+      else New Request
+          Route->>Lock: AcquireLock(lock:order:{id})
+          Lock-->>Route: OK
+          Route->>Svc: processOrder(payload)
+          Svc->>DB: INSERT INTO orders
+          Svc->>Kafka: Produce(OrderCreatedEvent)
+          Kafka-->>Svc: Ack
+          Svc->>Cache: SET idempotency:{key}
+          Route->>Lock: ReleaseLock(lock:order:{id})
+          Route-->>Client: 201 Created
 
-      alt User Account is Locked Out
-          Svc-->>Route: Result.LockedOut(until: timestamp)
-          Route-->>User: 423 Locked
-      else Invalid Password
-          Svc->>Crypto: verify(password, hash)
-          Crypto-->>Svc: False
-          Svc->>Store: incrementFailedCount(userId)
-          Svc-->>Route: Result.InvalidCredentials
-          Route-->>User: 401 Unauthorized
-      else Valid Credentials & MFA Required
-          Svc->>Crypto: verify(password, hash)
-          Crypto-->>Svc: True
-          Svc-->>Route: Result.RequiresMfa(challengeToken)
-          Route-->>User: 200 OK (Requires MFA)
-      else Valid Credentials & Success
-          Svc-->>Route: Result.Success(claims)
-          Route-->>User: 200 OK (Set-Cookie: session)
+          Note over Kafka,Worker: Asynchronous Consumer Loop
+          Kafka-)Worker: Consume(OrderCreatedEvent)
+          Worker->>DB: Record Payment Transaction
+          Worker-->>Kafka: Commit Offset
       end
   ```
 
@@ -113,5 +142,8 @@ When evaluating a single extracted feature (e.g., *Login Flow*, *MFA Challenge*,
 ## 3. Architecture Review Checklist
 - [ ] Feature boundaries are strictly encapsulated with zero leaky controller-to-database bypasses.
 - [ ] External dependencies are abstracted behind clean boundary interfaces (Ports).
-- [ ] Sequence diagram captures happy path, authentication failures, lockouts, and 2FA branches.
+- [ ] Distributed caching implements safe TTLs and cache-miss fallback paths.
+- [ ] Distributed locks use atomic Lua release scripts and bounded timeouts.
+- [ ] Kafka topics enforce deterministic partition keys and DLQ error routing.
+- [ ] Event consumers are verified to be idempotent against duplicate deliveries.
 - [ ] All Mermaid labels with parentheses or special characters are properly quoted.

@@ -37,12 +37,13 @@ Execute your audit through these 5 inspection steps:
   2. Inspect the specified line numbers.
   3. Classify citation status: `VERIFIED`, `LINE_DRIFT`, `INVALID_LOGIC`, or `MISSING_FILE`.
 
-### Step 2: Route & Contract Verification
-- Cross-check every route listed in `docs/contracts.md` against router/controller definitions in code:
-  - Does the HTTP verb match?
-  - Does the path match (including route prefixes, controllers, and areas)?
-  - Are authentication and rate-limiting attributes accurately reported?
-  - Do request/response schemas accurately reflect actual DTOs or form parameters?
+### Step 2: Route, RPC & Event Contract Verification
+- Cross-check every route, RPC, and event listed in `docs/contracts.md` against actual code:
+  - HTTP verbs, URL paths, controller handlers, and middleware decorators.
+  - **gRPC Services:** Protobuf package, service, and RPC method implementations.
+  - **Kafka Events & Topics:** Confirm topic strings, partition key expressions, payload DTOs, and Avro/Protobuf schema definitions exist in code.
+  - **Kafka Consumers:** Confirm consumer group IDs, topic subscriptions, commit policies, and retry/DLQ handlers exist.
+  - **Redis Cache & Locks:** Confirm Redis key prefixes, TTL arguments, data structure commands (`GET`, `HSET`, `ZADD`, `XADD`), and distributed lock Lua scripts match real source code.
 
 ### Step 3: Database & ORM Model Verification
 - Cross-check data models in `docs/contracts.md` against ORM definitions and migration files:
@@ -50,19 +51,22 @@ Execute your audit through these 5 inspection steps:
   - Are column types, nullability, and default values accurate?
   - In feature mode, are all columns touched by the feature flow accounted for?
 
-### Step 4: Business Rules & Branch Completeness
+### Step 4: Business Rules & Distributed Branch Completeness
 - Verify that every business rule in `docs/contracts.md`:
   - Corresponds to actual logic branches, calculations, or state guards in domain services.
-  - Accurately captures formulas, boundary numbers (e.g. `<= 5 failed attempts`, `15 min lockout`), and edge-case exceptions.
-- **Branch Completeness Check (Feature Mode):**
+  - Accurately captures formulas, boundary numbers (e.g. `<= 5 failed attempts`, `10s lock TTL`), and edge-case exceptions.
+- **Distributed Branch Completeness Check:**
   - Verify that both happy path and all error paths are captured:
-    - *Example (Login Flow):* Valid credentials, invalid password, non-existent user, unconfirmed email, locked out account, 2FA required prompt, invalid 2FA code, remember-me set vs unset, malicious external returnUrl redirect attempt.
+    - *Cache Hit vs. Cache Miss:* Fallback to database on cache miss; cache rehydration.
+    - *Distributed Lock Contention:* Lock timeout, retry, or 409 Conflict return.
+    - *Message Processing Failures:* Serialization error, business rule exception, retry backoff, and DLQ routing.
+    - *Security / Auth:* Expired tokens, tampered signatures, rate limit exhaustion (HTTP 429).
   - If any branch exists in code but is omitted from `contracts.md` or `reconstruction-spec.md`, flag as a defect.
 
 ### Step 5: Feature Slice Isolation & Dangling Dependency Check
 - For feature-scoped extractions:
-  - Inspect the call hierarchy of the feature's controllers and domain services.
-  - Check whether any invoked utility method, cryptographic provider, or database helper was omitted from `docs/reconstruction-spec.md`.
+  - Inspect the call hierarchy of the feature's controllers, services, and event consumers.
+  - Check whether any invoked utility method, cryptographic provider, Kafka producer, or Redis client was omitted from `docs/reconstruction-spec.md`.
   - Ensure the reconstruction specification defines a complete, self-contained contract that can be implemented cleanly.
 
 ---
