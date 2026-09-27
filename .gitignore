@@ -227,3 +227,5 @@ shaagent.config.json
 .gemini/
 docs/
 AGENT.md
+.npmrc
+
