@@ -9,14 +9,42 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nandakumar333/Reponix.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nandakumar333/Reponix/issues"
+  },
+  "homepage": "https://github.com/Nandakumar333/Reponix#readme",
+  "keywords": [
+    "reponix",
+    "ai-agents",
+    "scaffolder",
+    "cli",
+    "multi-agent",
+    "orchestrator",
+    "codebase-intelligence",
+    "modernization"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc && node scripts/bundle.js",
     "clean": "tsc --build --clean",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@clack/prompts": "^0.7.0",

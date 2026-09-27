@@ -28,6 +28,16 @@ async function bundle() {
     console.log('   ✔ skills/ copied');
   }
 
+  // Copy README.md and LICENSE to package root for npm distribution
+  for (const docFile of ['README.md', 'LICENSE']) {
+    const src = path.join(MONOREPO_ROOT, docFile);
+    const dest = path.join(CLI_ROOT, docFile);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+      console.log(`   ✔ ${docFile} copied`);
+    }
+  }
+
   console.log('✅ Packaging complete.');
 }
 
