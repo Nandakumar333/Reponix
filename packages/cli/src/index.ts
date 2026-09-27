@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import { runInit } from "./init.js";
 import { runDoctor } from "./doctor.js";
+import { runGraphCommand } from "./graph.js";
 
 const program = new Command();
 
@@ -37,6 +38,20 @@ program
   .description("Check repository environment, toolchain, and Reponix status")
   .action(() => {
     runDoctor();
+  });
+
+program
+  .command("graph")
+  .description("Generate, normalize and inspect structural repository graph")
+  .option("-f, --force", "Force re-extraction and normalization of the repository graph")
+  .option("--format <format>", "Output format: summary, mermaid, json", "summary")
+  .option("--fallback", "Use built-in AST extractor instead of native Graphify CLI")
+  .action(async (options) => {
+    await runGraphCommand({
+      force: options.force,
+      format: options.format as "summary" | "mermaid" | "json",
+      preferFallback: options.fallback,
+    });
   });
 
 program.parse(process.argv);

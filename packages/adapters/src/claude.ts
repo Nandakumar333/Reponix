@@ -48,7 +48,7 @@ export class ClaudeAdapter implements PlatformAdapter {
     const claudeMd = `${rootContent}
 
 ## Invoking Reponix in Claude Code
-To execute archaeological analysis, start by delegating to \`spy-orchestrator\`:
+To execute archaeological analysis, start by delegating to \`reponix-orchestrator\`:
 - View agents in \`.claude/agents/\`
 - Run \`npx reponix scan\` to begin automated extraction
 `;

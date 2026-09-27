@@ -61,7 +61,7 @@ describe("Integration: reponix init scaffolding", () => {
     // Verify platform-native files
     expect(fs.existsSync(path.join(tempDir, "GEMINI.md"))).toBe(true);
     expect(
-      fs.existsSync(path.join(tempDir, ".gemini/agents/spy-orchestrator.md"))
+      fs.existsSync(path.join(tempDir, ".gemini/agents/reponix-orchestrator.md"))
     ).toBe(true);
   });
 
@@ -87,7 +87,7 @@ describe("Integration: reponix init scaffolding", () => {
 
     expect(fs.existsSync(path.join(tempDir, "CLAUDE.md"))).toBe(true);
     expect(
-      fs.existsSync(path.join(tempDir, ".claude/agents/spy-orchestrator.md"))
+      fs.existsSync(path.join(tempDir, ".claude/agents/reponix-orchestrator.md"))
     ).toBe(true);
     expect(
       fs.existsSync(path.join(tempDir, ".claude/agents/reconstruction-agent.md"))
@@ -114,7 +114,7 @@ describe("Integration: reponix init scaffolding", () => {
     const result = await scaffoldReponix(config, { targetDir: tempDir });
     expect(fs.existsSync(path.join(tempDir, ".cursorrules"))).toBe(true);
     expect(
-      fs.existsSync(path.join(tempDir, ".cursor/rules/spy-orchestrator.mdc"))
+      fs.existsSync(path.join(tempDir, ".cursor/rules/reponix-orchestrator.mdc"))
     ).toBe(true);
   });
 

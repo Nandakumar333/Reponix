@@ -51,7 +51,7 @@ export class CopilotAdapter implements PlatformAdapter {
 When analyzing or reconstructing code in this repository:
 1. Adhere to the archaeological findings in \`.reponix/\`.
 2. Do not introduce unverified assumptions; follow the agent guidelines in \`.github/agents/\`.
-3. Consult \`spy-orchestrator.md\` as the entry point for complex multi-step archaeology.
+3. Consult \`reponix-orchestrator.md\` as the entry point for complex multi-step archaeology.
 `;
 
     return [

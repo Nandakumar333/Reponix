@@ -1,7 +1,7 @@
 import type { AgentDefinition } from "@reponix/schemas";
 
-export const spyOrchestratorAgent: AgentDefinition = {
-  id: "spy-orchestrator",
+export const reponixOrchestratorAgent: AgentDefinition = {
+  id: "reponix-orchestrator",
   name: "SPY Orchestrator",
   description: "Master coordinator managing repository archaeology, state transitions, and reconstruction specs.",
   role: "Archaeological Master Coordinator",

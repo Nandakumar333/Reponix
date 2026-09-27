@@ -59,7 +59,7 @@ Reponix is structured as a modular TypeScript monorepo:
 
 ## 🤖 The 13 Semantic Archaeology Agents
 
-1. **`spy-orchestrator`**: Master coordinator managing state transitions, evidence verification, and reconstruction pipelines.
+1. **`reponix-orchestrator`**: Master coordinator managing state transitions, evidence verification, and reconstruction pipelines.
 2. **`repository-analyst`**: Technology stack, directory layout, and package manifest inventory.
 3. **`architecture-agent`**: System topology, component boundaries, and visual Mermaid diagrams.
 4. **`code-agent`**: Symbol inventory, public interfaces, domain models, and core algorithms.
