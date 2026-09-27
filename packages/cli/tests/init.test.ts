@@ -26,7 +26,7 @@ describe('renderAgents and skill installation', () => {
       techStack: ['Python', 'Django'],
       targetStack: ['TypeScript', 'Fastify'],
       model: 'gemini-3.8-flash',
-      coreAgents: ['orchestrator', 'repo-analyst', 'arch-mapper'],
+      coreAgents: ['reponix-orchestrator', 'repo-analyst', 'arch-mapper'],
       optionalAgents: [],
       installedSkills: ['graphify'],
     };
@@ -34,7 +34,7 @@ describe('renderAgents and skill installation', () => {
     const written = await renderAgents(answers, { targetDir: tmpDir });
     expect(written.length).toBeGreaterThanOrEqual(4); // 3 agents + GEMINI.md
 
-    const orchestratorPath = path.join(tmpDir, '.gemini', 'agents', 'orchestrator.md');
+    const orchestratorPath = path.join(tmpDir, '.gemini', 'agents', 'reponix-orchestrator.md');
     expect(fs.existsSync(orchestratorPath)).toBe(true);
 
     const orchestratorContent = fs.readFileSync(orchestratorPath, 'utf-8');

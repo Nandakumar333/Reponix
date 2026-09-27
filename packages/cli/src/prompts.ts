@@ -45,7 +45,7 @@ export async function promptInit(defaults?: Partial<InitAnswers>): Promise<InitA
       {
         value: 'modernization',
         label: 'Modernization Suite (Recommended)',
-        hint: 'Orchestrator + Intelligence Agents + Modernizer',
+        hint: 'Reponix-Orchestrator + Intelligence Agents + Modernizer',
       },
       {
         value: 'intelligence',
@@ -84,7 +84,7 @@ export async function promptInit(defaults?: Partial<InitAnswers>): Promise<InitA
     coreAgents = ['repo-analyst', 'arch-mapper', 'code-inspector', 'validator'];
   } else if (suite === 'modernization') {
     coreAgents = [
-      'orchestrator',
+      'reponix-orchestrator',
       'repo-analyst',
       'arch-mapper',
       'code-inspector',
@@ -93,7 +93,7 @@ export async function promptInit(defaults?: Partial<InitAnswers>): Promise<InitA
     ];
   } else {
     coreAgents = [
-      'orchestrator',
+      'reponix-orchestrator',
       'repo-analyst',
       'arch-mapper',
       'code-inspector',

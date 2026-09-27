@@ -25,7 +25,7 @@ describe('Manifest / Config Manager', () => {
     techStack: ['python'],
     targetStack: ['typescript', 'node'],
     model: 'gemini-3.8-flash',
-    coreAgents: ['orchestrator', 'repo-analyst'],
+    coreAgents: ['reponix-orchestrator', 'repo-analyst'],
     optionalAgents: [],
     installedSkills: ['graphify'],
   };
@@ -36,7 +36,7 @@ describe('Manifest / Config Manager', () => {
     expect(config.suite).toBe('modernization');
     expect(config.project.name).toBe('DemoApp');
     expect(config.project.targetLanguage).toEqual(['typescript', 'node']);
-    expect(config.agents.core).toContain('orchestrator');
+    expect(config.agents.core).toContain('reponix-orchestrator');
   });
 
   it('saves and reloads config accurately from disk', () => {

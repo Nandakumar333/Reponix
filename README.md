@@ -17,7 +17,7 @@ npx reponix init
 1. **Launch:** Run `npx reponix init`
 2. **Scope:** Choose **project** (current repository) or **global** (user home directory)
 3. **Platform:** Select your AI coding harness (Claude Code, Gemini CLI, Cursor, OpenCode, GitHub Copilot, Codex, Continue, Windsurf)
-4. **Agent Suite:** Choose **Modernization Suite** (Orchestrator + Intelligence agents + Modernizer) or **Intelligence Suite** (Analysis only)
+4. **Agent Suite:** Choose **Modernization Suite** (Reponix-Orchestrator + Intelligence agents + Modernizer) or **Intelligence Suite** (Analysis only)
 5. **Setup:** Reponix renders platform-native agent files, installs selected skills, and saves configuration into `reponix.config.json`
 
 ---
@@ -27,7 +27,7 @@ npx reponix init
 Reponix deploys specialized agents designed for deep repository archaeology and system modernization:
 
 ```
-User → Orchestrator
+User → Reponix-Orchestrator
          │
          ├─► [1. Repo Analyst]      (Inventory: stack, layout, dependencies, configs)
          │
@@ -44,7 +44,7 @@ User → Orchestrator
 
 | Agent | Role | Output Artifact |
 |---|---|---|
-| **Orchestrator** | Coordinates the entire intelligence and modernization lifecycle. All sub-agents report through it. | Synthesis & Roadmaps |
+| **Reponix-Orchestrator** | Coordinates the entire intelligence and modernization lifecycle. All sub-agents report through it. | Synthesis & Roadmaps |
 | **Repo Analyst** | Discovers stack, dependencies, manifest files, directory topologies, and build tools. | `docs/inventory.md` |
 | **Arch Mapper** | Maps system topology, service boundaries, data flows, and renders visual Mermaid diagrams. | `docs/architecture.md` |
 | **Code Inspector** | Extracts REST/GraphQL endpoints, database schemas/migrations, domain entities, and core business rules. | `docs/contracts.md` |

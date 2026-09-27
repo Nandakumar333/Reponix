@@ -48,7 +48,7 @@ export function initCommand(): Command {
         const resolvedPlatform: Platform = platform || 'gemini-cli';
         const resolvedSuite: Suite = suite || 'modernization';
         const coreAgents = [
-          'orchestrator',
+          'reponix-orchestrator',
           'repo-analyst',
           'arch-mapper',
           'code-inspector',
@@ -98,7 +98,7 @@ export function initCommand(): Command {
 
         console.log(pc.bold(pc.cyan('  Next Steps:')));
         console.log(`   1. Open your AI coding harness (${pc.bold(answers.platform)}).`);
-        console.log(`   2. Invoke the ${pc.bold('orchestrator')} agent to begin discovery:`);
+        console.log(`   2. Invoke the ${pc.bold('reponix-orchestrator')} agent to begin discovery:`);
         console.log(pc.gray('      "Analyze this repository and generate system architecture."\n'));
       } catch (err: any) {
         s.stop(pc.red('Initialization failed.'));

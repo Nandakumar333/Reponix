@@ -23,7 +23,7 @@ npx reponix init
    - Codex
    - Continue
    - Windsurf
-2. **Orchestration-First** — The Orchestrator agent owns the intelligence and modernization workflow. All sub-agents are invoked through the orchestrator; sub-agents do not coordinate directly.
+2. **Orchestration-First** — The Reponix-Orchestrator agent owns the intelligence and modernization workflow. All sub-agents are invoked through the orchestrator; sub-agents do not coordinate directly.
 3. **Evidence-Driven Analysis** — Every architectural finding, contract specification, and reconstruction blueprint must cite real source files and lines. Hallucinations are actively detected by the Validator agent.
 4. **Skill-Composable** — Skills are installable modules (`SKILL.md` + optional references/scripts) that extend agent capabilities (such as code graphs or architectural diagrams).
 5. **Clean Monorepo Layout** — Lightweight single CLI package (`packages/cli`) with root templates and skills, mirroring the battle-tested architecture of ShaAgent.
@@ -58,7 +58,7 @@ reponix/
 ├── templates/
 │   └── generic/                    # Single template set for all platforms
 │       └── agents/
-│           ├── orchestrator.md.hbs
+│           ├── reponix-orchestrator.md.hbs
 │           ├── repo-analyst.md.hbs
 │           ├── arch-mapper.md.hbs
 │           ├── code-inspector.md.hbs
@@ -110,7 +110,7 @@ reponix/
 ## Agent Pipeline: Repository Intelligence & Modernization
 
 ```
-User → Orchestrator
+User → Reponix-Orchestrator
          │
          ├─► [1. Repo Analyst]      (Inventory: stack, layout, dependencies, configs)
          │

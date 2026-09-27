@@ -93,7 +93,7 @@ ${techStack ? `- **Source Stack:** ${techStack}\n` : ''}${targetStack ? `- **Tar
 ## Multi-Agent Architecture
 ${imports}
 
-Start by invoking the **orchestrator** agent when beginning repository analysis or modernization.
+Start by invoking the **reponix-orchestrator** agent when beginning repository analysis or modernization.
 `;
     }
 
@@ -107,7 +107,7 @@ ${techStack ? `Source Tech Stack: ${techStack}\n` : ''}
 ## Active Reponix Agents
 ${list}
 
-Always address the **orchestrator** agent to coordinate repository discovery and reconstruction blueprints.
+Always address the **reponix-orchestrator** agent to coordinate repository discovery and reconstruction blueprints.
 `;
     }
 
@@ -120,7 +120,7 @@ Project: **${projectName}**
 ## Configured Agents
 ${list}
 
-Use the **orchestrator** as the entry point for all workflows.
+Use the **reponix-orchestrator** as the entry point for all workflows.
 `;
     }
   }
