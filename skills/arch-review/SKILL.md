@@ -139,11 +139,32 @@ When evaluating caching and distributed state:
 
 ---
 
-## 3. Architecture Review Checklist
+## 3. Market Reference Architecture & Industry Benchmarking Framework
+
+When designing new architectures, evaluating product concepts, or benchmarking against industry standards (e.g. building an Uber/Ola-like ride-hailing app, a streaming platform like Netflix, or a payment engine like Stripe):
+
+### 3.1 Web & Case Study Research Protocol
+1. **Search & Source Gathering:** Connect to the web to retrieve engineering blogs (e.g., Uber Engineering, Netflix TechBlog, AWS Architecture Center), technical whitepapers, and system design case studies.
+2. **Competitive & Architectural Deconstruction:**
+   - **WHAT They Used:** Identify specific infrastructure tiers, data stores (relational, geospatial, time-series), event streaming brokers, and communication protocols (gRPC, WebSockets).
+   - **WHY They Used It:** Identify the specific bottlenecks and constraints that necessitated the choice (e.g., why Uber adopted H3 hexagonal indexing over R-Trees; why Redis distributed locking is required to prevent double-booking).
+   - **HOW to Implement This:** Define concrete schemas, state machines, distributed locking mechanics, and failure isolation patterns.
+
+### 3.2 Key Industry Benchmarks:
+- **Ride-Hailing & Real-Time Dispatch (Uber / Ola):**
+  - *Geospatial:* Uber H3 (Resolution 8) / Google S2 for constant-time proximity queries without database locks.
+  - *FastPath:* Redis Cluster for driver location cache; Redis Redlock (`SET NX EX`) to guarantee zero-double-dispatch.
+  - *Event Streaming:* Apache Kafka with partition key by `driverId` or `tripId` for asynchronous settlement and analytics.
+  - *Protocols:* Bidirectional WebSockets / gRPC streaming for sub-second driver GPS pings.
+
+---
+
+## 4. Architecture Review Checklist
 - [ ] Feature boundaries are strictly encapsulated with zero leaky controller-to-database bypasses.
 - [ ] External dependencies are abstracted behind clean boundary interfaces (Ports).
 - [ ] Distributed caching implements safe TTLs and cache-miss fallback paths.
-- [ ] Distributed locks use atomic Lua release scripts and bounded timeouts.
+- [ ] Distributed locks use atomic Lua release scripts and bounded timeouts to prevent race conditions.
 - [ ] Kafka topics enforce deterministic partition keys and DLQ error routing.
 - [ ] Event consumers are verified to be idempotent against duplicate deliveries.
+- [ ] Greenfield designs are anchored in verified industry standards (What, Why, How).
 - [ ] All Mermaid labels with parentheses or special characters are properly quoted.
