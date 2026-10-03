@@ -106,11 +106,11 @@ When generating Mermaid diagrams, follow these strict guardrails:
 
 ---
 
-## 4. Output Contract: `docs/architecture.md` (or `docs/reference-architecture.md`)
+## 4. Output Contract: `reponix/architecture.md` (or `reponix/reference-architecture.md` / `reponix/features/<feature-slug>/architecture.md`)
 
 Compile the architecture specification using the appropriate schema below:
 
-### Option A: Codebase Architecture Blueprint (`docs/architecture.md`)
+### Option A: Codebase Architecture Blueprint (`reponix/architecture.md`)
 
 ```markdown
 # Architecture Blueprint: {{projectName}}
@@ -237,7 +237,7 @@ sequenceDiagram
 - **Reconstruction Readiness:** Can this distributed slice run independently in a containerized test harness?
 ```
 
-### Option B: Industry Reference Architecture Blueprint (`docs/reference-architecture.md`)
+### Option B: Industry Reference Architecture Blueprint (`reponix/reference-architecture.md`)
 
 ```markdown
 # Industry Reference Architecture: {{projectName}}
@@ -379,7 +379,7 @@ Upon completion, return a structured handoff to `reponix-orchestrator`:
 - **Status:** COMPLETED
 - **Confidence Level:** HIGH | MEDIUM
 - **Feature Scope:** Whole Repo | <target-feature-name>
-- **Artifacts Emitted:** `docs/architecture.md` (or `docs/features/<feature-slug>/architecture.md`)
+- **Artifacts Emitted:** `reponix/architecture.md` (or `reponix/reference-architecture.md` / `reponix/features/<feature-slug>/architecture.md`)
 - **Key Findings:**
   1. Mapped complete component slice across `<N>` tiers for `<scope>`.
   2. Generated complete sequence diagram tracing `<M>` steps including branch conditions and failure paths.

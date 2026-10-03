@@ -48,12 +48,12 @@ User → Reponix-Orchestrator
 
 | Agent | Role | Output Artifact |
 |---|---|---|
-| **Reponix-Orchestrator** | Coordinates the entire intelligence and modernization lifecycle. All sub-agents report through it. | Synthesis & Roadmaps |
-| **Repo Analyst** | Discovers stack, dependencies, manifest files, directory topologies, and build tools. | `docs/inventory.md` |
-| **Arch Mapper** | Maps system topology, service boundaries, data flows, and renders visual Mermaid diagrams. | `docs/architecture.md` |
-| **Code Inspector** | Extracts REST/GraphQL endpoints, database schemas/migrations, domain entities, and core business rules. | `docs/contracts.md` |
-| **Modernizer** | Produces target-neutral reconstruction blueprints, API specifications, and phased refactoring plans. | `docs/reconstruction-spec.md` |
-| **Validator** | Audits generated documentation and migration blueprints against real source code evidence to guarantee zero hallucination. | `docs/validation-report.md` |
+| **Reponix-Orchestrator** | Coordinates the entire intelligence and modernization lifecycle. All sub-agents report through it. | `reponix/README.md` |
+| **Repo Analyst** | Discovers stack, dependencies, manifest files, directory topologies, and build tools. | `reponix/inventory.md` |
+| **Arch Mapper** | Maps system topology, service boundaries, data flows, and renders visual Mermaid diagrams. | `reponix/architecture.md` |
+| **Code Inspector** | Extracts REST/GraphQL endpoints, database schemas/migrations, domain entities, and core business rules. | `reponix/contracts.md` |
+| **Modernizer** | Produces target-neutral reconstruction blueprints, API specifications, and phased refactoring plans. | `reponix/reconstruction-spec.md` |
+| **Validator** | Audits generated documentation and migration blueprints against real source code evidence to guarantee zero hallucination. | `reponix/validation-report.md` |
 
 ### Built-in Skills
 

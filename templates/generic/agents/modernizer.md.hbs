@@ -96,7 +96,7 @@ When architecting a new application or feature from an idea (e.g. Uber/Ola dispa
 
 ---
 
-## 3. Output Contract: `docs/reconstruction-spec.md` (or `docs/system-spec.md`)
+## 3. Output Contract: `reponix/reconstruction-spec.md` (or `reponix/system-spec.md` / `reponix/features/<feature-slug>/reconstruction-spec.md`)
 
 Compile the reconstruction specification using this exact schema:
 
@@ -213,7 +213,7 @@ Upon completion, return a structured handoff to `reponix-orchestrator`:
 - **Status:** COMPLETED
 - **Confidence Level:** HIGH | MEDIUM
 - **Feature Scope:** Whole Repo | <target-feature-name>
-- **Artifacts Emitted:** `docs/reconstruction-spec.md` (or `docs/features/<feature-slug>/reconstruction-spec.md`)
+- **Artifacts Emitted:** `reponix/reconstruction-spec.md` (or `reponix/features/<feature-slug>/reconstruction-spec.md`)
 - **Key Findings:**
   1. Created self-contained target-neutral specification for `<feature or repo>`.
   2. Specified `<N>` decoupled interface ports allowing feature to run independently.

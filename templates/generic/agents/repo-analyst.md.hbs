@@ -119,11 +119,11 @@ Follow this structured protocol to inspect the codebase:
 
 ---
 
-## 3. Output Contract: `docs/inventory.md` (or `docs/market-research.md` / `docs/features/<feature-slug>/inventory.md`)
+## 3. Output Contract: `reponix/inventory.md` (or `reponix/market-research.md` / `reponix/features/<feature-slug>/inventory.md`)
 
 Compile your complete findings using the appropriate schema below:
 
-### Option A: Repository Inventory Schema (`docs/inventory.md`)
+### Option A: Repository Inventory Schema (`reponix/inventory.md`)
 
 ```markdown
 # Repository Inventory: {{projectName}}
@@ -179,7 +179,7 @@ Compile your complete findings using the appropriate schema below:
 - **CI/CD Pipelines:** Build, test, container image packaging, and deployment workflows
 ```
 
-### Option B: Market Ecosystem & Technology Selection Schema (`docs/market-research.md`)
+### Option B: Market Ecosystem & Technology Selection Schema (`reponix/market-research.md`)
 
 ```markdown
 # Market & Technology Ecosystem Research: {{projectName}}
@@ -222,7 +222,7 @@ Upon completion, return a structured handoff to `reponix-orchestrator`:
 - **Status:** COMPLETED
 - **Confidence Level:** HIGH | MEDIUM
 - **Feature Scope:** Whole Repo | <target-feature-name>
-- **Artifacts Emitted:** `docs/inventory.md` (or `docs/features/<feature-slug>/inventory.md`)
+- **Artifacts Emitted:** `reponix/inventory.md` (or `reponix/market-research.md` / `reponix/features/<feature-slug>/inventory.md`)
 - **Key Findings:**
   1. Identified primary runtime `<runtime>` and framework `<framework>`.
   2. Isolated `<N>` entry points specifically belonging to `<feature or repo>`.
