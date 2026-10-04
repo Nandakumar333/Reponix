@@ -35,8 +35,12 @@ Execute your audit through these 5 inspection steps:
 - Scan all generated markdown artifacts in `reponix/` for file citations (`path/to/file#Lxx-Lyy`).
 - For each citation:
   1. Confirm the file exists in the repository.
-  2. Inspect the specified line numbers.
-  3. Classify citation status: `VERIFIED`, `LINE_DRIFT`, `INVALID_LOGIC`, or `MISSING_FILE`.
+  2. Inspect the specified line numbers and surrounding AST code symbol (class name, function name, exported interface).
+  3. Classify citation status:
+     - `VERIFIED`: Target symbol and claimed logic exist exactly at the cited location.
+     - `LINE_DRIFT (BENIGN)`: Target symbol and logic exist in the file but shifted by a few lines due to edits. Mark as verified with corrected line range.
+     - `INVALID_LOGIC`: The cited line does not implement what was claimed. Flag as `HIGH` defect.
+     - `MISSING_FILE`: Referenced file path does not exist. Flag as `BLOCKER` defect.
 
 ### Step 2: Route, RPC & Event Contract Verification
 - Cross-check every route, RPC, and event listed in `reponix/contracts.md` against actual code:
@@ -70,6 +74,22 @@ Execute your audit through these 5 inspection steps:
   - Check whether any invoked utility method, cryptographic provider, Kafka producer, or Redis client was omitted from `reponix/reconstruction-spec.md`.
   - Ensure the reconstruction specification defines a complete, self-contained contract that can be implemented cleanly.
 
+### Step 6: Reconstruction Completeness & Buildability Audit
+- For `reponix/reconstruction-spec.md` (in whole-repo or feature mode), rigorously audit:
+  1. **Target Scaffolding Completeness:** Does the specification provide an explicit, complete directory tree and file list? Are all layers represented (domain, application ports, infrastructure adapters, ingress, tests)?
+  2. **Boundary Interface Decoupling:** Are Inbound (Primary) Ports and Outbound (Secondary) Ports fully declared with typed parameters, return types, and command/query DTOs?
+  3. **Executable Database Persistence:** Is the SQL DDL complete with table names, column types, nullability, foreign keys, unique constraints, and indexes?
+  4. **Algorithmic Pseudo-Code Detail:** Are business rules, state transitions, and cryptographic operations specified with step-by-step logic flows? If an algorithm is summarized with hand-waving words like "implement standard logic", flag as `BLOCKER` (`INSUFFICIENT_RECONSTRUCTION_DETAIL`).
+  5. **Golden Master Test Fixtures:** Are concrete test vectors with sample inputs and expected outputs documented?
+  6. **Phased AI Implementation Runbook:** Are copy-pasteable, phase-by-phase implementation prompts provided with verifiable exit criteria?
+
+### Step 7: Greenfield Reference Architecture & Benchmark Audit (Mode F)
+- When validating greenfield designs (`reponix/market-research.md`, `reponix/reference-architecture.md`, `reponix/reconstruction-spec.md`):
+  1. **SLA & Latency Feasibility:** Verify that claimed latency targets (e.g. `< 10ms` geospatial neighbor query) are realistic with the chosen technologies (e.g. Redis Cluster H3 vs unindexed SQL).
+  2. **Concurrency & Race Condition Proof:** Audit the design for race conditions: Is a distributed mutex (`SET NX EX`) or atomic state transition specified for concurrent state mutations (e.g. double booking, double dispatch)?
+  3. **Compensating Transactions & DLQs:** Ensure every distributed asynchronous step specifies a rollback or DLQ failure path (no unhandled orphan transactions).
+  4. **External Benchmark Credibility:** Verify that architectural claims (e.g. "Uber uses H3 resolution 8") accurately reflect published engineering literature.
+
 ---
 
 ## 3. Output Contract: `reponix/validation-report.md` (or `reponix/features/<feature-slug>/validation-report.md`)
@@ -88,11 +108,12 @@ Compile your validation audit into `reponix/validation-report.md` using this exa
 - **Line Number Drifts (Minor):** <count>
 - **Unverified or Hallucinated Claims:** <count>
 - **Missing Branches / Dangling Dependencies:** <count>
+- **Reconstruction Buildability Score:** `<(Complete Elements / Required Elements) * 100>%`
 - **Evidence Fidelity Score:** `<(Verified / Total) * 100>%`
 
 ### Overall Verdict:
 **[APPROVED | APPROVED WITH CONDITIONS | REJECTED - GAPS FOUND]**
-*(Criteria: APPROVED requires >= 95% fidelity, 0 Blocker/High issues, and 100% branch completeness for feature slices).*
+*(Criteria: APPROVED requires >= 95% fidelity, 100% reconstruction buildability score, 0 Blocker/High issues, and 100% branch completeness for feature slices).*
 
 ---
 
@@ -103,6 +124,7 @@ Compile your validation audit into `reponix/validation-report.md` using this exa
 | `VAL-01` | `HIGH` | `reponix/contracts.md` | Business Rules | Omitted Account Lockout branch in `AccountController.cs#L88` | Extract lockout rule and add to catalog | `code-inspector` |
 | `VAL-02` | `MEDIUM` | `reponix/architecture.md` | Sequence Flows | Sequence diagram missing SMS gateway call for MFA | Add SMS step to sequence diagram | `arch-mapper` |
 | `VAL-03` | `HIGH` | `reponix/reconstruction-spec.md` | Cryptography | Specification uses generic bcrypt without specifying PBKDF2 compatibility for existing hashes | Specify PBKDF2 hash verification for legacy password compatibility | `modernizer` |
+| `VAL-04` | `BLOCKER` | `reponix/reconstruction-spec.md` | Scaffolding / Algorithm | Missing explicit directory tree or step-by-step pseudo-code for checkout | Author complete target scaffold and algorithmic steps | `modernizer` |
 
 ---
 
@@ -116,7 +138,21 @@ Compile your validation audit into `reponix/validation-report.md` using this exa
 
 ---
 
-## 4. Remediation Instructions for Orchestrator
+## 4. Reconstruction Completeness & Buildability Scorecard
+| Reconstruction Element | Status (Pass/Fail) | Notes / Deficiencies |
+|---|---|---|
+| Target Directory & File Scaffold | PASS | Complete file tree in Section 2 |
+| Inbound & Outbound Boundary Ports | PASS | Complete TypeScript interfaces for use cases & repositories |
+| Ingress API & DTO Schemas (OpenAPI) | PASS | Full request/response JSON schemas and HTTP statuses |
+| Executable Database DDL & Indexes | PASS | Complete PostgreSQL DDL with foreign keys and outbox |
+| Redis FastPath & Concurrency Lua Scripts | PASS | Lua release script and key registry specified |
+| Algorithmic Pseudo-Code Flows | PASS | Step-by-step logic provided for all rules |
+| Golden Master Parity Test Vectors | PASS | Concrete input/output JSON fixtures provided |
+| Phased AI Implementation Runbook | PASS | Micro-prompts defined for Phase 0 to Phase 5 |
+
+---
+
+## 5. Remediation Instructions for Orchestrator
 1. **For `code-inspector`:** Re-examine `SignInManager.cs#L140` to extract Rule `BR-02` (Account Lockout Policy).
 2. **For `modernizer`:** Update cryptographic section in `reponix/reconstruction-spec.md` to specify PBKDF2 password compatibility so legacy users can log in without password resets.
 ```

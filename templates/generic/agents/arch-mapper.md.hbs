@@ -75,6 +75,16 @@ Follow this step-by-step methodology to map system architecture:
   - Error isolation: Retry topics with exponential backoff and DLQ dead-letter stores.
 - **Service Mesh & Cloud Boundaries:** Kubernetes Pod / Service routing, Envoy sidecars, egress proxies.
 
+### Step 3.5: Target Reconstruction Topology & Hexagonal Port Mapping
+When mapping for repository modernization or single-feature recreation:
+- Map the target architecture according to **Hexagonal / Clean Architecture (Ports & Adapters)** principles:
+  - **Inbound Adapters (Driving):** HTTP route controllers, gRPC handlers, CLI commands, queue listener consumers.
+  - **Inbound Ports:** Pure use case command/query interfaces (e.g. `ILoginUseCase`, `ICreateOrderUseCase`).
+  - **Domain Core:** Pure entities, value objects, domain events, and state machines with zero external framework dependencies.
+  - **Outbound Ports (Driven):** Pure interfaces for persistence (`IUserRepository`), caching (`ICacheStore`), locking (`IDistributedLock`), and messaging (`IEventPublisher`).
+  - **Outbound Adapters:** Concrete implementations (PostgreSQL Prisma/Drizzle repo, Redis cluster adapter, Kafka producer, Stripe gateway).
+- Render this target hexagonal architecture in a clear Mermaid diagram so that the recreating team/AI knows exactly how to wire modules together.
+
 ### Step 4: Market Reference Architecture & Industry Study Protocol (What, Why, How)
 When commissioned to research an idea, greenfield project, or benchmark against industry standards (e.g., an Uber/Ola-like ride-hailing app, a streaming engine, a fintech ledger):
 - **Web Search & Market Leader Discovery:**
@@ -123,6 +133,8 @@ Compile the architecture specification using the appropriate schema below:
 - **Messaging Strategy:** <e.g., Apache Kafka with Transactional Outbox & Schema Registry>
 
 ## 2. Component & Distributed Topology
+
+### 2.1 Current State (As-Is) Topology
 \`\`\`mermaid
 graph TD
     subgraph IngressTier ["Ingress & Gateway Tier"]
@@ -174,7 +186,56 @@ graph TD
     BillingConsumer --> PrimaryDB
 \`\`\`
 
-## 3. End-to-End Sequence Diagram (Sync & Async Lifecycles)
+### 2.2 Target Modernized (To-Be) Hexagonal Architecture
+\`\`\`mermaid
+graph TD
+    subgraph DrivingAdapters ["Inbound Driving Adapters"]
+        HTTPRoute["HTTP Controller / Fastify"]
+        gRPCHandler["gRPC Service Handler"]
+        KafkaListener["Kafka Event Consumer"]
+    end
+
+    subgraph InboundPorts ["Primary (Inbound) Ports"]
+        CmdPort["IProcessOrderUseCase"]
+        QueryPort["IGetOrderStatusUseCase"]
+    end
+
+    subgraph DomainCore ["Isolated Domain Core"]
+        OrderEntity["Order Aggregate Root"]
+        OrderFSM["Order State Machine"]
+        ValueObjects["Money / OrderId / LineItems"]
+    end
+
+    subgraph OutboundPorts ["Secondary (Outbound) Ports"]
+        RepoPort["IOrderRepository"]
+        CachePort["IDistributedCache"]
+        LockPort["IDistributedLock"]
+        EventPort["IEventPublisher"]
+    end
+
+    subgraph DrivenAdapters ["Outbound Driven Adapters"]
+        PrismaRepo["Prisma / PostgreSQL Adapter"]
+        RedisAdapter["Redis Cluster Adapter"]
+        KafkaAdapter["Kafka Producer Adapter"]
+    end
+
+    HTTPRoute --> CmdPort
+    gRPCHandler --> QueryPort
+    KafkaListener --> CmdPort
+    CmdPort --> OrderEntity
+    QueryPort --> OrderEntity
+    OrderEntity --> OrderFSM
+    OrderEntity --> RepoPort
+    OrderEntity --> CachePort
+    OrderEntity --> LockPort
+    OrderEntity --> EventPort
+    RepoPort --> PrismaRepo
+    CachePort --> RedisAdapter
+    LockPort --> RedisAdapter
+    EventPort --> KafkaAdapter
+\`\`\`
+
+## 3. End-to-End Sequence Diagram (Sync & Async Lifecycles with Saga Rollback)
 ### Flow: <e.g., Order Submission, Redis Caching, and Kafka Processing>
 \`\`\`mermaid
 sequenceDiagram
@@ -198,7 +259,7 @@ sequenceDiagram
         API->>Lock: AcquireLock(lock:order:{id}, ttl=5s)
         Lock-->>API: LockAcquired
         API->>Svc: ProcessOrder(payload)
-        Svc->>DB: BEGIN TX; INSERT INTO orders; COMMIT;
+        Svc->>DB: BEGIN TX; INSERT INTO orders (status='PENDING'); COMMIT;
         DB-->>Svc: OrderCreated (id=123)
         Svc->>Kafka: Produce(topic="orders.events.v1", key="123", event=OrderCreatedEvent)
         Kafka-->>Svc: Ack (partition 2, offset 4821)
@@ -206,13 +267,18 @@ sequenceDiagram
         API->>Lock: ReleaseLock(lock:order:{id})
         API-->>Client: 201 Created { orderId: 123, status: "PENDING_PAYMENT" }
 
-        Note over Kafka,Worker: Asynchronous Event Consumption
+        Note over Kafka,Worker: Asynchronous Event Consumption & Saga Execution
         Kafka-)Worker: ConsumeMessage(OrderCreatedEvent)
         Worker->>Worker: Validate & Process Payment
-        alt Processing Succeeded
+        alt Payment Succeeded
             Worker->>DB: UPDATE orders SET status='PAID' WHERE id=123
             Worker-->>Kafka: CommitOffset()
-        else Retries Exhausted
+        else Payment Failed (Compensating Rollback)
+            Note over Worker,DB: Compensating Action
+            Worker->>DB: UPDATE orders SET status='CANCELLED', failure_reason='CARD_DECLINED' WHERE id=123
+            Worker-)Kafka: Publish(orders.events.v1, OrderCancelledEvent)
+            Worker-->>Kafka: CommitOffset()
+        else Retries Exhausted (Poison Pill)
             Worker-)DLQ: PublishToDLQ(OrderCreatedEvent, errorReason)
             Worker-->>Kafka: CommitOffset()
         end

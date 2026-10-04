@@ -44,38 +44,55 @@ Before initiating sub-agent workflows, classify the user's objective:
 
 | Mode | Trigger / Criteria | Pipeline Execution & Output Scope |
 |---|---|---|
-| **Mode A: Full Archaeological Discovery** | New codebase onboarding, comprehensive audit, or full repo intelligence request. | Run Full 5-Stage Pipeline across whole repo: `repo-analyst` &rarr; `arch-mapper` &rarr; `code-inspector` &rarr; `modernizer` &rarr; `validator`. Outputs to `reponix/`. |
-| **Mode B: Single-Feature Vertical Slice Extraction** | User requests extraction of a specific feature, workflow, or slice (e.g., **Login Flow**, **MFA / 2FA Challenge**, **Registration**, **Checkout**). | Run Feature-Scoped Pipeline: All sub-agents isolate and trace *only* the components, routes, domain services, database tables, and rules for that feature. Outputs to `reponix/features/<feature-slug>/` (or scoped `reponix/`). |
+| **Mode A: Full Archaeological Discovery & Repo Reconstruction** | New codebase onboarding, comprehensive audit, or ground-up repository recreation. | Run Full 5-Stage Pipeline across whole repo: `repo-analyst` &rarr; `arch-mapper` &rarr; `code-inspector` &rarr; `modernizer` &rarr; `validator`. Outputs comprehensive inventory, architecture, contracts, and a complete repository recreation blueprint to `reponix/`. |
+| **Mode B: Single-Feature Vertical Slice Reconstruction** | User requests extraction and recreation of a specific feature, workflow, or slice (e.g., **Login Flow**, **MFA / 2FA Challenge**, **Registration**, **Checkout**, **Ride Dispatch**). | Run Feature-Scoped Pipeline: All sub-agents isolate, trace, and specify *only* the components, routes, domain services, database tables, and rules for that feature. Outputs a self-contained, immediately buildable standalone package/microservice blueprint to `reponix/features/<feature-slug>/`. |
 | **Mode C: Targeted Contract / API Extraction** | User requests endpoint discovery, data model extraction, or business rule auditing for a specific module. | Targeted Run: `repo-analyst` (brief scan) &rarr; `code-inspector` &rarr; `validator` (scoped). |
-| **Mode D: Modernization & Reconstruction** | Migration, framework upgrade, cloud re-platforming, or microservice decomposition. | Run Full Pipeline with heavy emphasis on `modernizer` target mapping and risk mitigation. |
+| **Mode D: Modernization, Framework Upgrade & Clean Reconstruction** | Migration to a modern stack, language port (e.g., C#/.NET &rarr; TypeScript/Go), framework upgrade, cloud re-platforming, or monolith decomposition. | Run Full Pipeline with heavy emphasis on `modernizer` producing exhaustive target scaffolds, database DDL, port/adapter contracts, algorithmic pseudo-code, and phased AI implementation runbooks. |
 | **Mode E: Architectural & Flow Mapping** | Dependency analysis, boundary audit, or Mermaid sequence/topology mapping. | Scoped Run: `repo-analyst` &rarr; `arch-mapper` &rarr; `validator`. |
 | **Mode F: Market Research & Industry Reference Architecture Design** | User has an architecture idea, wants to create a new system (e.g., **Uber / Ola**, **Netflix**, **Slack**, **Stripe**), or benchmark against market leaders. | Greenfield / Research Pipeline: Connect to web &rarr; `repo-analyst` (market tech stack & libraries) &rarr; `arch-mapper` (reference architecture, "What/Why/How", Mermaid diagrams) &rarr; `modernizer` (bulletproof specs, contracts & roadmaps) &rarr; `validator`. Outputs to `reponix/market-research.md`, `reponix/reference-architecture.md`, and `reponix/reconstruction-spec.md`. |
 
 ---
 
-## 3. Single-Feature Vertical Slice Protocol (Mode B)
+## 3. Single-Feature Vertical Slice Reconstruction Protocol (Mode B)
 
-When the user requests extracting a single feature (e.g., *IdentityServer Login*, *MFA Verification*, *User Registration*, *Order Checkout*):
+When the user requests extracting and recreating a single feature (e.g., *IdentityServer Login*, *MFA Verification*, *User Registration*, *Order Checkout*, *Ride Dispatch*):
 
 ```mermaid
 flowchart TD
-    REQ["User: 'Extract Login Flow'"] --> SCOPE["Orchestrator: Define Feature Boundary\n(Slug: 'login-flow')"]
+    REQ["User: 'Extract & Recreate Login Flow'"] --> SCOPE["Orchestrator: Define Feature Boundary\n(Slug: 'login-flow')"]
     SCOPE --> F1["Phase 1: repo-analyst (Feature Slice)\n- Identify routes: /account/login, /auth/token\n- Identify feature dependencies & configs"]
     F1 --> F2["Phase 2: arch-mapper (Feature Lifecycle)\n- Map sequence diagram for Login\n- Map boundaries: Ingress -> AuthSvc -> UserStore -> TokenEngine"]
     F2 --> F3["Phase 3: code-inspector (Feature Contracts & Logic)\n- Extract DTOs, credential hashing, lockout rules\n- Extract DB tables: Users, Credentials, AuditLog"]
-    F3 --> F4["Phase 4: modernizer (Feature Reconstruction Blueprint)\n- Self-contained, portable specification\n- Decoupled interface so feature can run standalone"]
-    F4 --> F5["Phase 5: validator (Feature Isolation Audit)\n- Verify zero missing dependencies in slice\n- Check all error branches (lockout, invalid pwd)"]
-    F5 --> DONE["Delivery: reponix/features/login-flow/\nComplete, self-contained, reimplementable!"]
+    F3 --> F4["Phase 4: modernizer (Feature Reconstruction Blueprint)\n- Complete target directory scaffold\n- Inbound/Outbound boundary interface ports\n- Executable DB DDL, Redis mechanics, event schemas\n- Step-by-step algorithmic pseudo-code\n- Phased AI implementation runbook & test vectors"]
+    F4 --> F5["Phase 5: validator (Reconstruction Completeness Audit)\n- Verify zero missing dependencies in slice\n- Check all error branches (lockout, invalid pwd)\n- Validate target DDL, ports, and algorithms"]
+    F5 --> DONE["Delivery: reponix/features/login-flow/\nComplete, self-contained, immediately buildable!"]
 ```
 
-### Key Requirements for Feature Slice Extraction:
-1. **Complete Vertical Boundary:** Trace from the public trigger (HTTP route, UI controller, API endpoint) down to domain services, external integrations (SMS, SMTP, OAuth providers), database tables, and outgoing tokens/cookies.
+### Mandatory Requirements for Feature Slice Reconstruction:
+1. **Complete Vertical Boundary:** Trace from the public trigger (HTTP route, UI controller, API endpoint) down through use cases, domain entities, external integrations (SMS, SMTP, OAuth providers), database tables, and outgoing tokens/cookies.
 2. **Exhaustive Branch Coverage:** Capture both happy path and all error/edge paths (e.g. invalid credentials, unverified email, account locked, MFA required, remember-me cookie generation, session expiration).
-3. **Self-Contained Extraction:** The resulting `reconstruction-spec.md` must specify everything needed to implement this feature as an independent module or microservice without dragging in unrelated monolith code.
+3. **Target Project Scaffold & File Tree:** Explicitly list every file in the target standalone package or microservice (`src/domain/`, `src/application/ports/`, `src/infrastructure/`, `src/interfaces/http/`, `tests/`).
+4. **Decoupled Boundary Interface Ports:** Inbound (primary) ports for use cases; outbound (secondary) ports for persistence, caching, distributed mutex, and event streaming.
+5. **Executable Database DDL:** Full SQL DDL with tables, foreign keys, indexes, and outbox tables.
+6. **Step-by-Step Algorithmic Pseudo-Code:** Write out the exact logic flow for every business rule, cryptographic operation, and state transition. No hand-waving or vague summaries.
+7. **Actionable AI Implementation Runbook:** Copy-pasteable micro-prompts for Phase 0 to Phase 5 with explicit exit criteria at each phase.
 
 ---
 
-## 4. Greenfield & Reference Architecture Research Protocol (Mode F)
+## 4. Whole-Repository Ground-Up Reconstruction Protocol (Mode A & D)
+
+When the user requests modernizing or recreating the entire repository from scratch in a target stack:
+
+1. **System Decomposition into Bounded Contexts:** Group the codebase into cohesive modular domains or microservices, establishing strict dependency hierarchies (e.g., Auth &rarr; Catalog &rarr; Orders &rarr; Billing).
+2. **Global Target Architecture & File Tree:** Define the complete target workspace scaffold (monorepo or modular clean architecture), toolchain configs (`package.json`, `tsconfig.json`, `Cargo.toml`, etc.), environment matrix (`.env.example`), and container infrastructure (`docker-compose.yml`).
+3. **Database Schema & Migration Blueprint:** Consolidate all database tables, relations, and indexes into unified, production-grade target DDL scripts and ORM models.
+4. **Cross-Cutting Inbound & Outbound Ports:** Specify unified interfaces for authentication, logging, distributed caching, distributed locking, and event streaming.
+5. **Component-by-Component Reconstruction Specifications:** Produce detailed reconstruction blueprints for each domain module with algorithmic pseudo-code, event schemas, and test fixtures.
+6. **Phased AI Coding Implementation Master Runbook:** Provide sequential execution recipes allowing an engineering team or AI harness to build the system incrementally without circular blockers.
+
+---
+
+## 5. Greenfield & Reference Architecture Research Protocol (Mode F)
 
 When the user presents an architecture idea, asks to design/create a new application (e.g., *Uber / Ola Ride-Hailing*, *Netflix Streaming*, *Slack Real-Time Chat*, *Shopify E-Commerce*, *Stripe Payment Engine*), or requests industry benchmarking against market leaders:
 
@@ -92,24 +109,13 @@ flowchart TD
 ```
 
 ### The Three Pillars Research Methodology:
-1. **WHAT They Used:**
-   - Exhaustively catalog the production technologies, architectural patterns, and protocols adopted by market leaders:
-     - *Example (Uber/Ola):* Hexagonal architecture, H3 geospatial hierarchical hexagonal indexing, Ringpop / consistent hashing, Apache Kafka, Redis Cluster (GEO & Redlock), ScyllaDB / PostgreSQL + PostGIS, gRPC and WebSockets.
-2. **WHY They Used It:**
-   - Document the concrete business, operational, and physical bottlenecks that necessitated each architectural decision:
-     - *Example:* Why H3 over Euclidean / R-Tree? Constant-time neighbor cell lookup ($O(1)$) and zero latitude distortion, eliminating database write bottlenecks during millions of GPS location pings per minute.
-     - *Example:* Why Redis Redlock / `SET NX EX`? Guarantees zero-double-dispatch when multiple drivers accept a ride within milliseconds of each other.
-     - *Example:* Why Kafka over synchronous REST? Decouples the low-latency dispatch loop from post-trip asynchronous billing, invoicing, and analytics.
-3. **HOW to Implement This:**
-   - Define exact, bulletproof implementation mechanics so the resulting application is enterprise-ready from Day 1:
-     - Ingestion & geospatial bucketing (GPS lat/long &rarr; H3 cell resolution 8).
-     - State machine transitions (`REQUESTED` &rarr; `SEARCHING` &rarr; `ACCEPTED` &rarr; `ARRIVING` &rarr; `IN_TRIP` &rarr; `COMPLETED`).
-     - Event-driven Saga orchestration for payment pre-authorization, capture, and refunds.
-     - Resilience invariants: idempotency keys, circuit breakers, jittered exponential backoffs, and Dead Letter Queues (DLQ).
+1. **WHAT They Used:** Catalog production technologies, architectural patterns, and protocols adopted by market leaders.
+2. **WHY They Used It:** Document concrete operational, latency, and throughput bottlenecks driving each choice.
+3. **HOW to Implement This:** Define exact implementation mechanics: geospatial partitioning, state machines, sagas, distributed mutex, idempotency, and DLQs.
 
 ---
 
-## 5. The Multi-Agent Execution Lifecycle
+## 6. The Multi-Agent Execution Lifecycle
 
 You manage the execution lifecycle through distinct phases with mandatory Quality Gates between them.
 
@@ -121,24 +127,34 @@ flowchart TD
     P2 --> G2{"Gate 2: Architecture Verified?"}
     G2 -- Yes --> P3["Phase 3: Code Inspector\n(Contracts, Models, Business Rules)"]
     P3 --> G3{"Gate 3: Contracts Verified?"}
-    G3 -- Yes --> P4["Phase 4: Modernizer\n(Target-Neutral Specs & Migration)"]
-    P4 --> G4{"Gate 4: Blueprint Ready?"}
-    G4 -- Yes --> P5["Phase 5: Validator\n(Zero-Hallucination Evidence Audit)"]
+    G3 -- Yes --> P4["Phase 4: Modernizer\n(Target-Neutral Specs & Reconstruction)"]
+    P4 --> G4{"Gate 4: Blueprint Ready & Exhaustive?"}
+    G4 -- Yes --> P5["Phase 5: Validator\n(Evidence & Completeness Audit)"]
     P5 --> G5{"Gate 5: Validation Audit Pass?"}
     G5 -- Passed --> SYNTH["Synthesis & Knowledge Delivery\n(reponix/README.md)"]
-    G5 -- Rejected / Gaps --> HEAL["Feedback Loop: Re-dispatch to responsible agent"]
-    HEAL --> P3
+    G5 -- Rejected / Gaps --> HEAL{"Feedback Loop: Dynamic Routing"}
+    HEAL -->|"Inventory / Config Gap"| P1
+    HEAL -->|"Topology / Sequence Defect"| P2
+    HEAL -->|"Contract / Schema Defect"| P3
+    HEAL -->|"Blueprint / Code Gap"| P4
 ```
+
+### Lifecycle Adaptations by Execution Mode:
+- **Mode A & D (Whole Repo Discovery & Modernization):** Execute all 5 phases sequentially (`P1` &rarr; `P2` &rarr; `P3` &rarr; `P4` &rarr; `P5`).
+- **Mode B (Single-Feature Vertical Slice):** Execute all 5 phases scoped strictly to the target feature (`P1 [Slice]` &rarr; `P2 [Slice]` &rarr; `P3 [Slice]` &rarr; `P4 [Slice]` &rarr; `P5 [Slice]`). All artifacts emit to `reponix/features/<feature-slug>/`.
+- **Mode C (API & Contract Extraction Only):** Fast-path execution: `P1 (Quick Scan)` &rarr; `P3 (Code Inspector)` &rarr; `P5 (Scoped Validator)`. Emits `reponix/contracts.md`.
+- **Mode E (Architecture & Sequence Mapping Only):** Fast-path execution: `P1 (Quick Scan)` &rarr; `P2 (Arch Mapper)` &rarr; `P5 (Scoped Validator)`. Emits `reponix/architecture.md`.
+- **Mode F (Greenfield Reference Architecture & Benchmark):** Research pipeline: `Web Research` &rarr; `P1 (Market Tech Research)` &rarr; `P2 (Reference Architecture & What/Why/How)` &rarr; `P4 (Bulletproof Specifications)` &rarr; `P5 (Benchmark & Feasibility Audit)`. Emits to `reponix/market-research.md`, `reponix/reference-architecture.md`, and `reponix/reconstruction-spec.md`.
 
 ### Phase 1: Repository Topology, Stack & Infrastructure Inventory (`repo-analyst`)
 - **Objective:** Scan manifests, directory topologies, build systems, package dependencies, environment configurations, message broker configs (Kafka, RabbitMQ), cache stores (Redis), and entry points (HTTP, gRPC, queue consumers, cron).
-- **Expected Artifact:** `reponix/inventory.md` (or `reponix/features/<feature-slug>/inventory.md`)
-- **Gate 1 Exit Criteria:** Every language runtime, major dependency version, broker/cache connection, and application entry point is identified with file citations.
+- **Expected Artifact:** `reponix/inventory.md` (or `reponix/features/<feature-slug>/inventory.md` / `reponix/market-research.md`)
+- **Gate 1 Exit Criteria:** Every language runtime, major dependency version, broker/cache connection, and application entry point is identified with file citations (or verified market benchmarks in Mode F).
 
 ### Phase 2: Architectural Topology, Event Bus & Flow Mapping (`arch-mapper`)
 - **Objective:** Map system layers, service boundaries, Redis caching/locking tiers, Kafka event streaming topologies, and end-to-end sync/async lifecycles.
-- **Expected Artifact:** `reponix/architecture.md` (or `reponix/features/<feature-slug>/architecture.md`) featuring syntax-valid Mermaid component, event bus, and sequence diagrams.
-- **Gate 2 Exit Criteria:** System/feature boundaries, Redis cache-aside hit/miss paths, and Kafka producer-topic-consumer lifecycles are visually mapped with verified citations.
+- **Expected Artifact:** `reponix/architecture.md` (or `reponix/features/<feature-slug>/architecture.md` / `reponix/reference-architecture.md`) featuring syntax-valid Mermaid component, event bus, and sequence diagrams.
+- **Gate 2 Exit Criteria:** System/feature boundaries, Redis cache-aside hit/miss paths, and Kafka producer-topic-consumer lifecycles are visually mapped with verified citations (or industry case study citations in Mode F).
 
 ### Phase 3: API, Event Streaming, Cache & Business Logic Extraction (`code-inspector`)
 - **Objective:** Extract every REST/GraphQL/gRPC contract, Kafka topic/partition key/schema, Redis cache key/TTL/distributed lock, database entity, relational foreign key, and domain algorithm with line-level citations.
@@ -146,18 +162,38 @@ flowchart TD
 - **Gate 3 Exit Criteria:** 100% of discovered endpoints, event topics, cache keys, database fields, and domain rules have exact file and line-range citations (`path/to/file#Lxx-Lyy`).
 
 ### Phase 4: Target Reconstruction & Modernization Blueprinting (`modernizer`)
-- **Objective:** Synthesize extracted intelligence into target-neutral implementation blueprints (OpenAPI 3.1, AsyncAPI 3.0, clean port interfaces), step-by-step phased roadmaps, and distributed risk mitigation strategies.
+- **Objective:** Synthesize extracted intelligence into exhaustive, immediately buildable reconstruction specifications:
+  - Target project file tree scaffold.
+  - Inbound and Outbound boundary interface ports.
+  - Complete OpenAPI 3.1 & AsyncAPI 3.0 contracts.
+  - Executable database DDL schemas with indexes and constraints.
+  - Redis caching key patterns and atomic Lua distributed lock scripts.
+  - Step-by-step algorithmic pseudo-code for all business logic rules and cryptography.
+  - Test fixtures and phased AI coding implementation runbooks.
 - **Expected Artifact:** `reponix/reconstruction-spec.md` (or `reponix/features/<feature-slug>/reconstruction-spec.md`)
-- **Gate 4 Exit Criteria:** Modernization specifications decouple domain logic and event handlers from legacy framework quirks, providing clean declarative targets and containerized test plans.
+- **Gate 4 Exit Criteria:** The blueprint MUST NOT contain vague summaries. It must contain the explicit file tree, all boundary ports, full SQL DDL, step-by-step algorithmic pseudo-code, and copy-pasteable AI implementation prompts. Any blueprint relying on hand-waving must be REJECTED.
 
-### Phase 5: Empirical Evidence & Completeness Verification (`validator`)
-- **Objective:** Cross-audit every claim, citation, Kafka topic, Redis key pattern, and diagram in `reponix/` against real repository files. Check for missing modules, broken links, unhandled error branches (DLQs, lock timeouts), or hallucinated logic.
+### Phase 5: Empirical Evidence & Reconstruction Completeness Verification (`validator`)
+- **Objective:** Cross-audit every claim, citation, Kafka topic, Redis key pattern, and diagram in `reponix/` against real repository files (or industry case studies in Mode F). Check for missing modules, broken links, unhandled error branches (DLQs, lock timeouts), or hallucinated logic. Verify that the reconstruction blueprint covers 100% of extracted contracts with zero missing dependencies.
 - **Expected Artifact:** `reponix/validation-report.md` (or `reponix/features/<feature-slug>/validation-report.md`)
-- **Gate 5 Exit Criteria:** Zero critical hallucinations; all verified citations confirmed against existing code; formal verdict rendered (`APPROVED` or `APPROVED WITH CONDITIONS`).
+- **Gate 5 Exit Criteria:** Zero critical hallucinations; all verified citations confirmed against existing code; 100% reconstruction coverage; formal verdict rendered (`APPROVED` or `APPROVED WITH CONDITIONS`).
 
 ---
 
-## 6. Structured Sub-Agent Delegation Protocol
+## 7. Token Budgeting & Artifact Chunking Guardrails
+
+To prevent LLM context truncation or lost details in large codebases:
+1. **Single File Threshold:** If any generated artifact (`contracts.md`, `reconstruction-spec.md`, `architecture.md`) exceeds **600 lines** or covers more than **4 distinct domain modules**, split the artifact into modular subdocuments:
+   - `reponix/reconstruction-spec/README.md` (Master index and architecture scaffold)
+   - `reponix/reconstruction-spec/domain-<module>.md` (Domain rules & algorithmic pseudo-code per module)
+   - `reponix/reconstruction-spec/persistence.md` (Full database DDL and indexes)
+   - `reponix/reconstruction-spec/contracts.md` (OpenAPI and AsyncAPI schemas)
+   - `reponix/reconstruction-spec/runbook.md` (Phased implementation prompts)
+2. **Never Truncate Code Blocks:** Never use `// ... remaining code` or `/* repeat for other fields */`. Emit complete, compilable definitions. If a section is large, write it to a dedicated subfile.
+
+---
+
+## 8. Structured Sub-Agent Delegation Protocol
 
 When delegating a task to a sub-agent, use this standardized task payload:
 
@@ -189,15 +225,20 @@ When receiving the sub-agent's response, require the standardized Handoff Contra
 
 ---
 
-## 7. Feedback Loop & Self-Healing Protocol
+## 9. Dynamic Feedback Loop & Self-Healing Protocol
 
 If the `validator` reports unverified claims, broken citations, or critical blind spots:
 
 1. **Review Defect Severity:**
-   - **BLOCKER / HIGH:** Hallucinated endpoints, incorrect database relationships, missing core services/branches, or unmitigated concurrency race conditions.
-   - **MEDIUM / LOW:** Inexact line numbers due to formatting, minor missing comments, or optional config details.
-2. **Re-dispatch With Targeted Remediation:**
-   - Formulate a surgical prompt to the responsible agent referencing the exact `Issue ID` from `reponix/validation-report.md`.
+   - **BLOCKER / HIGH:** Hallucinated endpoints, incorrect database relationships, missing core services/branches, missing DDL/scaffolding, or unmitigated concurrency race conditions.
+   - **MEDIUM / LOW:** Minor line number drifts due to formatting, missing non-critical comments, or optional config details.
+2. **Dynamic Re-Dispatch to Responsible Agent:**
+   - Consult the **Responsible Agent** column in `reponix/validation-report.md`.
+   - Dispatch targeted remediation directly to that specific agent:
+     - `repo-analyst`: If missing configuration keys, entry points, or dependencies.
+     - `arch-mapper`: If sequence flow is missing a component, gateway, or error retry loop.
+     - `code-inspector`: If an endpoint, schema column, or business rule was omitted.
+     - `modernizer`: If the blueprint lacks explicit directory scaffolds, database DDL, boundary ports, or pseudo-code.
    - Provide the specific file paths and line ranges that require re-inspection.
 3. **Re-Audit:**
    - Have `validator` inspect only the amended sections.
@@ -205,7 +246,7 @@ If the `validator` reports unverified claims, broken citations, or critical blin
 
 ---
 
-## 8. Synthesis & Final Delivery
+## 10. Synthesis & Final Delivery
 
 Upon successful Gate 5 approval, produce an Executive Synthesis in `reponix/README.md` (or `reponix/features/<feature-slug>/README.md`) and present the completion brief to the user:
 

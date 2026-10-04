@@ -1,106 +1,145 @@
 ---
 name: modernization
-description: Generates target-neutral software specifications and migration blueprints for whole repos or single feature flows.
+description: Generates exhaustive, production-grade target-neutral software specifications, directory scaffolds, database DDL, boundary ports, algorithmic logic flows, and migration blueprints for recreating entire repositories or single feature flows.
 ---
 
-# Modernization Skill
+# Modernization & System Reconstruction Skill
 
-This skill provides comprehensive architectural guidelines, migration patterns, and specification standards for decomposing legacy codebases, authoring target-neutral reconstruction blueprints, and executing safe, zero-downtime application modernizations.
+This skill provides comprehensive architectural guidelines, specification standards, and implementation methodologies for decomposing legacy codebases, authoring target-neutral reconstruction blueprints, and executing ground-up recreation of entire repositories or isolated single-feature vertical slices.
 
-It supports both **macro-level system modernizations** and **single-feature slice extractions** (e.g. extracting an IdentityServer Login or MFA flow into a modern standalone service).
-
----
-
-## 1. Principles of Target-Neutral Specification
-
-A target-neutral specification captures the fundamental intent, business logic, and operational invariants of a software system while remaining completely decoupled from legacy language or framework quirks.
-
-### 1.1 Decoupling Business Rules from Framework Artifacts
-- **Strip Framework Conventions:**
-  - Strip framework-specific annotations (e.g., ASP.NET `[Authorize]`, Spring `@Transactional`, NestJS `@UseGuards()`).
-  - Translate them into declarative invariants: *Pre-condition*, *Invariant*, *Authorization Rule*, *Atomicity Boundary*.
-- **Pure Functional Core:**
-  - Formulate domain calculations (cryptographic verification, lockout math, TOTP generation) as pure mathematical and logical functions with explicit inputs and outputs.
-- **Explicit State Transitions:**
-  - Model lifecycle entities as formal Finite State Machines (FSM). Document: Initial State, Valid Transitions, Triggers (Events), Transition Guards, and Side Effects.
+It supports both **whole-repository ground-up reconstruction** and **single-feature slice extraction and recreation** (e.g. extracting an IdentityServer Login, MFA flow, Checkout pipeline, or Real-time dispatch engine into a modern, standalone modular microservice or package).
 
 ---
 
-## 2. Single-Feature Extraction & Modernization Patterns
+## 1. The Core Philosophy of System Reconstruction
 
-When extracting a single feature (e.g., *Login Flow*, *MFA Challenge*, *Registration*) from a legacy codebase:
+A system or feature reconstruction specification is successful **only if an AI coding agent or new engineering team can recreate the entire software component from scratch without reading the legacy code and without making architectural assumptions.**
 
-### 2.1 The Standalone Feature Microservice / Module Pattern
-- Extract the feature into an independent, portable service or package (e.g., Fastify module, FastAPI service, Go Gin microservice, or serverless functions).
-- Expose clear declarative contracts (OpenAPI 3.1) for public ingress.
-- Define clean output ports for persistence and notifications so the feature can connect to existing databases during transition.
+### Operating Principles
+1. **Target-Neutral Business Invariants:** Decouple business rules from legacy framework idioms (e.g., stripping ASP.NET MVC pipeline quirks or Spring Security filter lifecycles into pure domain rules).
+2. **Hexagonal Ports & Adapters Architecture:** Every recreated system or feature must strictly isolate Inbound Ports (use cases), Domain Core (entities/FSMs), Outbound Ports (repositories/caches/brokers), and Infrastructure Adapters.
+3. **Zero Hand-Waving Detail:** Every database table must have complete SQL DDL; every business rule must have step-by-step algorithmic pseudo-code; every concurrency-sensitive path must have exact Redis lock key patterns and Lua release scripts.
+4. **Guaranteed Data & Behavioral Parity:** Recreations must match legacy verified behavior, handling both happy paths and edge cases (rate limits, lockout thresholds, open-redirect checks, and transaction boundaries).
 
-### 2.2 Rehash-on-Login Pattern (Zero-Disruption Cryptographic Modernization)
-- **Problem:** Legacy system uses an outdated hashing algorithm (e.g., PBKDF2 with low iterations, or SHA-256). You want to modernize to Argon2id without forcing all users to reset their passwords.
-- **Solution Strategy:**
-  1. The modern service implements both the legacy verification algorithm and the modern Argon2id hasher.
-  2. On user login, check password using the legacy algorithm.
-  3. If verification succeeds: immediately compute the new Argon2id hash from the plaintext password.
-  4. Asynchronously update the user's stored password hash and algorithm identifier in the database.
-  5. Subsequent logins for that user verify directly against Argon2id.
+---
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant Auth as Modern Auth Service
-    participant DB as User Database
+## 2. The 7 Pillars of Complete Reconstruction Specifications
 
-    User->>Auth: POST /login (username, plaintextPassword)
-    Auth->>DB: Fetch user record (hash, algo: "PBKDF2")
-    DB-->>Auth: Stored Record
-    Auth->>Auth: verifyLegacyPBKDF2(plaintextPassword, storedHash)
-    Note over Auth: Verification SUCCESS!
-    Auth->>Auth: hashWithArgon2id(plaintextPassword)
-    Auth-)DB: UPDATE user SET hash = newArgon2Hash, algo = "ARGON2ID"
-    Auth-->>User: 200 OK (Auth Cookie / Token Issued)
+When authoring `reconstruction-spec.md` for a whole repo or feature slice, systematically formulate these 7 pillars:
+
+### Pillar 1: Target Project Scaffolding & Directory Layout
+Provide the exact, complete target file tree for the recreated repository or feature:
+```
+target-component/
+├── .env.example                              # Validated environment configuration template
+├── Dockerfile                                # Multi-stage container build
+├── docker-compose.yml                        # App, PostgreSQL, Redis, Kafka local harness
+├── package.json / Cargo.toml / go.mod        # Pinned runtime and development dependencies
+├── tsconfig.json                             # Strict compiler configuration
+├── src/
+│   ├── index.ts                              # Bootstrap & DI container assembly
+│   ├── domain/                               # Pure Domain Core (Zero external framework deps)
+│   │   ├── entities/                         # Aggregate roots and entity models
+│   │   ├── value-objects/                    # Immutable value objects
+│   │   ├── events/                           # Domain event definitions
+│   │   └── exceptions/                       # Domain error types
+│   ├── application/                          # Application Orchestration & Ports
+│   │   ├── ports/
+│   │   │   ├── inbound/                      # Use case command/query interfaces
+│   │   │   └── outbound/                     # Repository, Cache, Mutex, and Gateway interfaces
+│   │   ├── dtos/                             # Input/Output DTO schemas
+│   │   └── use-cases/                        # Use case orchestration implementations
+│   ├── infrastructure/                       # Outbound Adapters (External Implementations)
+│   │   ├── persistence/                      # Database repositories, migrations, ORM schemas
+│   │   ├── cache/                            # Redis cache & distributed lock adapters
+│   │   ├── messaging/                        # Kafka event producer & consumer adapters
+│   │   └── gateways/                         # Third-party SDK wrappers (SMS, Email, Payment)
+│   └── interfaces/                           # Inbound Adapters (Driving Ingress)
+│       └── http/                             # REST/GraphQL route handlers, middleware, DTO validation
+└── tests/
+    ├── fixtures/                             # Golden master test vectors
+    ├── unit/                                 # Pure domain unit tests
+    └── integration/                          # Containerized end-to-end integration tests
 ```
 
-### 2.3 Strangler Proxy Routing for Single Features
-- Route only the extracted feature's endpoints through the API Gateway:
-  - `POST /account/login` &rarr; Modern Authentication Service
-  - `POST /account/mfa/verify` &rarr; Modern Authentication Service
-  - `ALL OTHER ROUTES (/*)` &rarr; Legacy Monolith Application
-- Share session authentication cookies or JWT signing keys between legacy and modern services during the coexistence window.
+### Pillar 2: Target-Neutral Domain Models, Value Objects & FSMs
+- **Pure Entities:** Model entities with strict typing, validation invariants, and immutability rules.
+- **Formal Finite State Machines (FSM):**
+  - Document every state (e.g. `PENDING`, `AUTHORIZED`, `SETTLED`, `CANCELLED`).
+  - Document transition guards (pre-conditions that must hold for transition).
+  - Document side-effects (e.g. event emissions, cache updates, audit logs).
+
+### Pillar 3: Inbound & Outbound Boundary Interface Ports
+- **Inbound (Primary) Ports:** Interfaces triggered by ingress controllers:
+  ```typescript
+  export interface IExecuteCheckoutUseCase {
+    execute(command: CheckoutCommand): Promise<CheckoutResult>;
+  }
+  ```
+- **Outbound (Secondary) Ports:** Interfaces abstracting infrastructure:
+  ```typescript
+  export interface IOrderRepository {
+    findById(id: string): Promise<Order | null>;
+    save(order: Order): Promise<void>;
+  }
+  export interface IDistributedLock {
+    acquire(key: string, ttlSeconds: number): Promise<{ acquired: boolean; token: string }>;
+    release(key: string, token: string): Promise<boolean>;
+  }
+  export interface IEventPublisher {
+    publish<T>(topic: string, partitionKey: string, event: T): Promise<void>;
+  }
+  ```
+
+### Pillar 4: Ingress Contracts & Database Persistence DDL
+- **OpenAPI 3.1 & RPC Specs:** HTTP verbs, routes, headers, query parameters, request schemas, status codes, and RFC 7807 problem details.
+- **Complete SQL DDL:**
+  ```sql
+  CREATE TABLE IF NOT EXISTS orders (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      customer_id UUID NOT NULL,
+      status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+      total_amount_cents BIGINT NOT NULL CHECK (total_amount_cents >= 0),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  CREATE INDEX idx_orders_customer_id ON orders (customer_id);
+  ```
+
+### Pillar 5: Algorithmic Step-by-Step Logic Flows
+Never write "handle authentication" or "process the order". Write numbered step-by-step algorithms:
+```text
+1. Sanitize and validate incoming payload against schema.
+2. Verify rate limit counter in Redis; reject with HTTP 429 if exceeded.
+3. Acquire distributed mutex lock on "lock:resource:{id}" with 10s TTL.
+4. Fetch entity state from repository; hydrate domain aggregate.
+5. Evaluate domain invariants (e.g. credential check, balance check).
+6. Execute state transition; append domain event to Transactional Outbox table.
+7. Commit database transaction.
+8. Invalidate Redis cache entry; release distributed mutex lock in finally block.
+9. Format response DTO and emit security cookies / JWTs.
+10. Trigger asynchronous event relay to Kafka.
+```
+
+### Pillar 6: Data Migration & Zero-Downtime Cutover
+- **Dual-Write with Transactional Outbox:** Both systems or new system write to primary and outbox to avoid split-brain.
+- **Rehash-on-Login (Zero-Reset Password Modernization):**
+  - Verify legacy hash (e.g. PBKDF2), compute Argon2id on success, and asynchronously upgrade the database hash.
+- **Strangler Fig Proxy Routing:** API Gateway routes traffic progressively (10% &rarr; 50% &rarr; 100%) with response diffing on shadow traffic.
+
+### Pillar 7: Golden Master Parity Test Suite & AI Implementation Runbooks
+- **Parity Test Fixtures:** Concrete JSON input and output vectors covering happy path and error cases.
+- **AI Coding Implementation Runbook:** Sequential, promptable micro-tasks for Phase 0 (Scaffold), Phase 1 (Domain), Phase 2 (Persistence), Phase 3 (FastPath), Phase 4 (Ingress), and Phase 5 (Cutover).
 
 ---
 
-## 3. Data Migration & Cutover Strategies
-
-Data migration carries the highest risk of operational failure. Blueprints must specify exact data synchronization protocols:
-
-### 3.1 Dual-Write with Transactional Outbox
-1. **Application-Level Dual Write:** The modern or legacy service writes to both databases within a transactional outbox to prevent split-brain states.
-2. **Idempotency Keys:** Enforce unique idempotency keys on every transaction.
-
-### 3.2 Shadow Traffic & Response Parity Testing
-1. Configure the API Gateway to duplicate incoming read traffic (`GET` requests).
-2. Forward the primary request to the legacy application (returning its response to the user).
-3. Asynchronously forward the duplicated request to the modern target service.
-4. Diff the responses (headers, status code, JSON body fields) in real time to verify parity.
-
----
-
-## 4. Phased Modernization Roadmap Standards (Feature Extraction)
-
-| Phase | Focus Area | Deliverables | Exit Criteria |
-|---|---|---|---|
-| **Phase 0** | Target Scaffold & OpenAPI Spec | Target workspace, OpenAPI 3.1 contract, CI pipeline | 100% automated CI build |
-| **Phase 1** | Cryptographic & Rule Parity | Legacy password verifier, TOTP provider, lockout engine | 100% unit test pass rate matching legacy test fixtures |
-| **Phase 2** | Ingress Routes & DB Adapters | Route handlers, repository connecting to user store | Full integration tests pass on DB snapshot |
-| **Phase 3** | Strangler Routing & Shadow Run | Gateway route for feature, shadow response diffing | 0% divergence on shadow traffic |
-| **Phase 4** | Production Cutover & Rehash | Shift 100% live feature traffic; trigger rehash-on-login | 100% production traffic with zero auth downtime |
-| **Phase 5** | Legacy Monolith Cleanup | Delete legacy controller and retired dependencies | Monolith build succeeds without legacy feature code |
-
----
-
-## 5. Modernization Review Checklist
-- [ ] Feature extraction provides complete OpenAPI 3.1 contract.
+## 3. Single-Feature Extraction Review Checklist
+- [ ] Complete directory tree and file paths explicitly specified.
+- [ ] Inbound and Outbound boundary ports fully typed with zero external framework leaks.
+- [ ] Executable database SQL DDL with constraints, foreign keys, and indexes included.
+- [ ] Redis key templates, TTLs, and atomic Lua mutex scripts defined.
+- [ ] Step-by-step numbered algorithmic pseudo-code provided for all business rules.
+- [ ] Golden Master test fixtures with concrete JSON payloads included.
+- [ ] Phased AI coding implementation runbook provided from Phase 0 to Phase 5.
 - [ ] Rehash-on-login or credential migration strategy avoids forcing user password resets.
-- [ ] Strangler Fig gateway routing isolates only the target feature routes.
-- [ ] Explicit rollback mechanisms and emergency gateway fallback switches are defined.
+- [ ] Explicit rollback mechanisms and emergency gateway fallback switches defined.
