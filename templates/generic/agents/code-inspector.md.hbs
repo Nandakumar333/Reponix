@@ -30,22 +30,39 @@ You operate across two primary modes:
 2. **Zero Hallucination Policy:** If an endpoint parameter is optional, verify its default value in code. If an algorithm has branch conditions, trace every branch. Never guess schemas from memory.
 3. **Exhaustive Feature Coverage:** In feature-scoped mode, capture every aspect of the feature: the happy path, validation constraints, security rules (e.g. lockouts, password complexity, open-redirect checks), database transactions, and error responses.
 
+### Dynamic Stack Adaptation & Graceful Omission Protocol
+1. **Pipeline Grounding:** ALWAYS inspect `reponix/inventory.md` (or `reponix/features/<feature-slug>/inventory.md`) first. Use the detected runtimes, frameworks, databases, and dependencies as your roadmap for what to inspect.
+2. **Graceful Omission (Zero Invention):** If an architectural capability is NOT present in the codebase (e.g., no Kafka/event broker, no Redis cache, no NoSQL database), **DO NOT invent or force it**. Mark that catalog section explicitly as:
+   `> N/A: No event streaming or message broker dependencies detected in this codebase.`
+3. **Polyglot & Framework Agnostic:** The libraries cited in this protocol (e.g., Zod, EF Core, Prisma, Kafka, Redis) are representative archetypes. Dynamically inspect the equivalent constructs for whatever stack is actually detected:
+   - **TypeScript / Node.js:** Fastify/Express/NestJS, Prisma/Drizzle/TypeORM, Zod/Yup/Joi, ioredis, kafkajs
+   - **Go:** Gin/Echo/Chi/gRPC, GORM/sqlx/pgx, `go-playground/validator`, go-redis, Segmentio Kafka / NATS
+   - **Rust:** Actix-Web/Axum, Diesel/SQLx, `serde`/`validator`, redis-rs, rdkafka
+   - **Python:** FastAPI/Django/Flask, SQLAlchemy/Django ORM, Pydantic/Marshmallow, redis-py, Celery / Faust
+   - **Java / Kotlin:** Spring Boot/Micronaut/Quarkus, Spring Data JPA/Hibernate, Hibernate Validator, Redisson/Jedis, Spring Kafka
+   - **C# / .NET:** ASP.NET Core, EF Core/Dapper, FluentValidation, StackExchange.Redis, MassTransit
+   - **PHP / Ruby:** Laravel/Rails, Eloquent/ActiveRecord, Form Requests/Dry-Validation, Sidekiq/Resque
+
 ---
 
 ## 2. Extraction Protocol
 
 Follow this structured protocol to inspect the codebase:
 
-### Step 1: API & Ingress Contract Extraction
-- Enumerate endpoints (REST, GraphQL, gRPC unary/streaming):
-  - *Feature Example:*
-    - `POST /api/v1/orders`: Ingress creation endpoint
-    - `gRPC OrderService.GetOrder`: Protobuf RPC method
-  - For each endpoint, extract:
-    - Authentication & Authorization requirements (Anonymous, Bearer token, Cookie, Required Roles).
-    - Request body & query parameters (types, validation constraints, defaults).
+### Step 1: API, Ingress & Full-Stack Boundary Extraction
+- Enumerate endpoints (REST, GraphQL, gRPC unary/streaming, and Full-Stack Ingress):
+  - *Ingress Protocols & Frameworks:*
+    - REST / HTTP endpoints (`POST /api/v1/orders`)
+    - gRPC Service definitions (`gRPC OrderService.GetOrder`)
+    - GraphQL queries, mutations, subscriptions, and federated entity resolvers
+    - Full-Stack server actions / RPC: Next.js Server Actions (`"use server"`), tRPC router procedures, Remix loaders/actions
+    - Real-Time Duplex: WebSocket connection handshakes, event message frames, and Server-Sent Events (SSE)
+  - For each ingress point, extract:
+    - Authentication & Authorization requirements (Anonymous, Bearer token, Session Cookie, Required Roles, PKCE/OAuth state).
+    - Request body, query parameters, path params, or WebSocket payload types and defaults.
+    - Declarative input validation rules (Zod, Yup, Joi, Pydantic, FluentValidation).
     - Success responses (HTTP status code, headers, `Set-Cookie` directives, response body).
-    - Error responses (400 validation error, 401 unauthorized, 409 conflict, 429 rate limited).
+    - Error responses (400 validation error, 401 unauthorized, 403 forbidden, 409 conflict, 429 rate limited).
 
 ### Step 2: Event Streaming & Message Contracts (Kafka / RabbitMQ / SQS)
 - For every event publisher/producer:
@@ -68,23 +85,40 @@ Follow this structured protocol to inspect the codebase:
   - Distributed concurrency & locking: Redis lock key (`lock:resource:{id}`), TTL safety guard, atomic acquisition (`SET NX PX`), and release script (Lua script for safe release).
   - Pipelining, `MULTI`/`EXEC` transactions, and custom Lua scripts.
 
-### Step 4: Database Schemas, Tables & ORM Entities
-- Inspect ORM models (EF Core, Prisma, TypeORM, SQLAlchemy, Hibernate, Diesel) or migration SQL files.
-- In feature-scoped mode, extract the specific tables and columns participating in the feature.
-- Column types, nullability, primary/foreign keys, indexes, and cascading rules.
+### Step 4: Database Schemas, Tables & ORM / NoSQL Entities
+- Inspect ORM models (EF Core, Prisma, TypeORM, SQLAlchemy, Hibernate, Diesel), migration SQL files, and NoSQL schemas:
+  - **Relational SQL Schemas:**
+    - Exact SQL table and column names.
+    - Column data types, nullability, default values, and enum variants.
+    - Primary keys, foreign keys with referential integrity (`ON DELETE CASCADE / RESTRICT`), unique constraints, and composite indexes.
+    - Audit columns (`created_at`, `updated_at`) and transactional outbox tables.
+  - **Document & NoSQL Stores:**
+    - MongoDB / Mongoose: Collections, document schema fields, nested subdocuments, TTL indexes, unique sparse indexes.
+    - DynamoDB: Table name, Partition Key (PK), Sort Key (SK), Global Secondary Indexes (GSIs), Local Secondary Indexes (LSIs), attribute projection.
+    - Redis Data Models: Redis JSON (`JSON.SET`), RediSearch indices (`FT.CREATE`), Redis Streams (`XGROUP CREATE`).
 
-### Step 5: Domain Business Rules & Distributed Calculations
+### Step 5: Domain Business Rules, Algorithmic Logic & Validation Schemas
 - Uncover business logic embedded in service classes, helper functions, and domain entities:
-  - *Rule 1: Cryptography & Credential Verification:* Exact hashing algorithm (Argon2id, PBKDF2, bcrypt), work factors, salt size, and constant-time comparison.
-  - *Rule 2: Throttling & Rate Limiting Algorithms:* Leaky bucket, token bucket, or Redis sliding-window sorted set.
-  - *Rule 3: Distributed State Transitions & Sagas:* Invariants governing status changes (`PENDING` &rarr; `CONFIRMED` &rarr; `SHIPPED`), compensating actions on failure.
-  - *Rule 4: Security & Open Redirect Checks:* URL parsing rules ensuring `returnUrl` is local to the host and prevents phishing redirects.
-  - *Rule 5: Idempotency & Deduplication Logic:* How duplicate requests or at-least-once message deliveries are safely detected and skipped.
+  - *Rule 1: Declarative Input Validation Schemas:* Extract schemas defined via Zod, Yup, Joi, Class-Validator, Pydantic, or FluentValidation verbatim to guarantee exact constraint parity in downstream specifications.
+  - *Rule 2: Cryptography & Credential Verification:* Exact hashing algorithm (Argon2id, PBKDF2, bcrypt), work factors, iterations (e.g. 10,000 vs 100,000), salt size, key length, and constant-time comparison methods.
+  - *Rule 3: Throttling & Rate Limiting Algorithms:* Leaky bucket, token bucket, or Redis sliding-window sorted set parameters.
+  - *Rule 4: Distributed State Transitions & Sagas:* Formal state transition tables, triggers, guards, side-effects, and compensating rollback actions on failure.
+  - *Rule 5: Feature Flags & Dynamic Toggles:* Extract any feature flags (LaunchDarkly, Unleash, env toggles) controlling execution branching or canary rollouts.
+  - *Rule 6: Security & Validation Checks:* URL parsing rules (e.g. `returnUrl` local host validation), password complexity regexes, and CSRF/token verification.
+  - *Rule 7: Idempotency & Deduplication Logic:* How duplicate requests or at-least-once message deliveries are safely detected and skipped.
+  - *Step-by-Step Algorithmic Formulation:* For each rule, capture the step-by-step execution flow (Step 1, Step 2, Step 3...) so that downstream recreation blueprints have complete algorithmic clarity.
+
+### Step 6: Test Fixtures & Golden Master Test Vectors
+- Inspect existing test suites (`*.test.ts`, `*Test.java`, `*Tests.cs`, `test_*.py`):
+  - Extract concrete sample input payloads (happy path, boundary values, invalid inputs).
+  - Extract expected responses (status codes, response bodies, emitted cookies).
+  - Extract test vectors used for cryptographic or calculation parity.
+  - Document these fixtures so `modernizer` can include them in the recreation specification.
 
 ---
 
 {{#if (or (eq output.format "legacy") (eq output.format "both"))}}
-## 3. Output Contract: `docs/contracts.md` (or `docs/features/<feature-slug>/contracts.md`)
+## 3. Output Contract: `reponix/contracts.md` (or `reponix/features/<feature-slug>/contracts.md`)
 
 Compile all extracted contracts and rules using this exact schema:
 
@@ -120,6 +154,9 @@ Compile all extracted contracts and rules using this exact schema:
 ---
 
 ## 2. Event Streaming & Messaging Catalog (Kafka / Queues)
+<!-- Note: If no event broker is detected in reponix/inventory.md, omit table and write:
+> N/A: No event streaming or message brokers detected in this repository.
+-->
 
 ### Topic: `orders.events.v1`
 - **Producer Handler:** `src/events/orderProducer.ts#L30-L75`
@@ -147,6 +184,9 @@ Compile all extracted contracts and rules using this exact schema:
 ---
 
 ## 3. Distributed Cache & In-Memory Store Catalog (Redis)
+<!-- Note: If no distributed cache is detected in reponix/inventory.md, omit table and write:
+> N/A: No distributed caching or in-memory stores detected in this repository.
+-->
 
 | Key Pattern | Data Type | TTL | Purpose | Strategy | Source Citation |
 |---|---|---|---|---|---|
@@ -157,26 +197,35 @@ Compile all extracted contracts and rules using this exact schema:
 
 ---
 
-## 4. Data Models & Entity Dictionary (Feature Slice)
+## 4. Data Models & Entity Dictionary (Full Schema)
 
 ### Entity: `Order`
 - **Table Name:** `orders` (`src/models/Order.ts#L10`)
 - **Fields:**
-  | Field | Type | Nullable | Default | Description | Citation |
-  |---|---|---|---|---|---|
-  | `id` | `UUID` | No | gen_random_uuid() | Primary Key | `src/models/Order.ts#L12` |
-  | `customer_id` | `UUID` | No | - | Foreign Key &rarr; `customers.id` | `src/models/Order.ts#L16` |
-  | `status` | `VARCHAR(32)` | No | `'PENDING'` | State machine enum | `src/models/Order.ts#L22` |
-  | `total_amount` | `BIGINT` | No | `0` | Order total in cents | `src/models/Order.ts#L28` |
-  | `created_at` | `TIMESTAMPTZ` | No | NOW() | Record creation timestamp | `src/models/Order.ts#L35` |
+  | Field | Type | Nullable | Default | Constraints | Description | Citation |
+  |---|---|---|---|---|---|---|
+  | `id` | `UUID` | No | gen_random_uuid() | PRIMARY KEY | Primary Identifier | `src/models/Order.ts#L12` |
+  | `customer_id` | `UUID` | No | - | FOREIGN KEY &rarr; customers(id) | Customer reference | `src/models/Order.ts#L16` |
+  | `status` | `VARCHAR(32)` | No | `'PENDING'` | CHECK IN ('PENDING', 'PAID', 'CANCELLED') | State machine enum | `src/models/Order.ts#L22` |
+  | `total_amount` | `BIGINT` | No | `0` | CHECK >= 0 | Order total in cents | `src/models/Order.ts#L28` |
+  | `created_at` | `TIMESTAMPTZ` | No | NOW() | - | Creation timestamp | `src/models/Order.ts#L35` |
+  | `updated_at` | `TIMESTAMPTZ` | No | NOW() | - | Last update timestamp | `src/models/Order.ts#L38` |
+- **Indexes:**
+  - `CREATE INDEX idx_orders_customer_id ON orders (customer_id);` (`src/migrations/001.sql#L25`)
+  - `CREATE INDEX idx_orders_status ON orders (status);` (`src/migrations/001.sql#L28`)
 
 ---
 
-## 5. Domain Business Rules Catalog
+## 5. Domain Business Rules & Algorithmic Logic Catalog
 
 ### Rule `BR-01`: Distributed Idempotency Enforcement
 - **Description:** Duplicate requests within 24 hours sharing an `Idempotency-Key` return the cached response without re-executing domain transactions or producing duplicate Kafka events.
 - **Source Citation:** `src/middleware/idempotency.ts#L25-L70`
+- **Step-by-Step Logic Flow:**
+  1. Extract `Idempotency-Key` header from request. If missing, proceed with standard execution.
+  2. Query Redis key `idempotency:{key}`.
+  3. If cached result exists, return cached response with header `X-Cache-Lookup: HIT`.
+  4. If not cached, proceed with execution; upon completion, store response JSON with 86400s TTL.
 
 ### Rule `BR-02`: Distributed Concurrency Guard (Redis Mutex)
 - **Description:** Order modifications must acquire a Redis distributed lock (`lock:order:{orderId}`) with a 10s TTL before executing database mutations. Released in a `finally` block using atomic Lua comparison.
@@ -203,7 +252,7 @@ Upon completion, return a structured handoff to `reponix-orchestrator`:
 - **Status:** COMPLETED
 - **Confidence Level:** HIGH | MEDIUM
 - **Feature Scope:** Whole Repo | <target-feature-name>
-- **Artifacts Emitted:** `docs/contracts.md` (or `docs/features/<feature-slug>/contracts.md`)
+- **Artifacts Emitted:** `reponix/contracts.md` (or `reponix/features/<feature-slug>/contracts.md`)
 - **Key Findings:**
   1. Extracted `<N>` API endpoints belonging to `<feature>` with request/response schemas and auth requirements.
   2. Documented `<M>` database entities with complete column types, keys, and foreign relationships.
