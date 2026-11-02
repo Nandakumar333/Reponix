@@ -1,0 +1,96 @@
+## Open Knowledge Format (OKF) v0.2 Output Contract
+
+You must emit your findings as an **OKF v0.2 compliant bundle** under your designated subtree.
+
+### 1. Ownership & Boundary Constraints
+- **Owning Subtree:** `{{ownedSubtree}}`
+- **Strict Isolation:** You MUST ONLY create or modify files inside `{{ownedSubtree}}`. Never write to another agent's directory.
+- **Never Touch Reserved Files:** Do NOT write or modify `index.md` or `log.md`. The Reponix CLI generates and updates these deterministically.
+- **Deterministic Slugs:** Use deterministic kebab-case filenames based on actual identifiers (e.g., `apis/<method>-<path>.md`, `schemas/<table>.md`, `components/<name>.md`) so re-runs overwrite cleanly rather than creating duplicates.
+- **Granularity Rule:** One concept per architectural component, API endpoint, database table, domain entity, business rule, or migration phase. Do NOT create one file per function or class.
+
+### 2. Allowed Concept Types & File Patterns
+{{#if (eq agentName "repo-analyst")}}
+- `Technology Stack` &rarr; `inventory/stack.md` (Required headings: `# Stack Matrix`, `# Runtimes & Frameworks`)
+- `Dependency` &rarr; `inventory/dependencies/<pkg>.md` (Required headings: `# Overview`, `# Usage in Repository`)
+- `Build Tool` &rarr; `inventory/build/<tool>.md` (Required headings: `# Build Configuration`, `# Artifacts`)
+- `Configuration` &rarr; `inventory/configs/<file>.md` (Required headings: `# Configuration Schema`, `# Environment Variables`)
+{{else if (eq agentName "arch-mapper")}}
+- `Architecture View` &rarr; `architecture/system-context.md` (Required headings: `# System Topology`, `# Mermaid Diagrams`)
+- `Component` &rarr; `architecture/components/<name>.md` (Required headings: `# Overview`, `# Interfaces & Dependencies`)
+- `Data Flow` &rarr; `architecture/flows/<name>.md` (Required headings: `# Sequence Lifecycle`, `# Flow Diagram`)
+- `Architecture Decision` &rarr; `architecture/decisions/<id>.md` (Required headings: `# Context`, `# Decision`, `# Consequences`)
+{{else if (eq agentName "code-inspector")}}
+- `API Endpoint` &rarr; `contracts/apis/<method>-<path>.md` (Required headings: `# Schema`, `# Behavior`)
+- `Database Table` &rarr; `contracts/schemas/<table>.md` (Required headings: `# Schema`, `# Indexes & Constraints`)
+- `Domain Entity` &rarr; `contracts/entities/<name>.md` (Required headings: `# Invariants`, `# Fields`)
+- `Business Rule` &rarr; `contracts/rules/<name>.md` (Required headings: `# Rule Statement`, `# Implementation Logic`)
+- `Event` &rarr; `contracts/events/<name>.md` (Required headings: `# Payload Schema`, `# Producers & Consumers`)
+{{else if (eq agentName "modernizer")}}
+- `Reconstruction Blueprint` &rarr; `reconstruction/blueprint.md` (Required headings: `# Architecture Target`, `# Invariants`)
+- `Migration Phase` &rarr; `reconstruction/phases/<nn>-<name>.md` (Required headings: `# Scope`, `# Migration Steps`, `# Exit Criteria`)
+- `Target Specification` &rarr; `reconstruction/specs/<component>.md` (Required headings: `# Target Contract`, `# Implementation Guide`)
+{{else if (eq agentName "validator")}}
+- `Validation Report` &rarr; `validation/report.md` (Required headings: `# Audit Summary`, `# Verification Metrics`)
+- `Gap` &rarr; `validation/gaps/<id>.md` (Required headings: `# Defect Description`, `# Remediations`)
+{{else if (or (eq agentName "reponix-orchestrator") (eq agentName "orchestrator"))}}
+- `Repository` &rarr; `overview.md` (Required headings: `# Executive Summary`, `# System Architecture`)
+{{else}}
+- Permitted Types: `{{allowedTypes}}`
+- Required Headings: `{{requiredHeadings}}`
+{{/if}}
+
+### 3. Frontmatter & Metadata Standards
+Every concept file MUST begin with YAML frontmatter adhering to this schema:
+
+```yaml
+---
+type: <One of permitted types above>
+title: <Concise display title>
+description: <Single-sentence summary of this concept without line breaks.>
+tags: [<keyword>, <domain>]
+status: draft
+generated: { by: reponix-{{agentName}}/{{model}}, at: 2026-10-24T09:12:00Z }
+sources:
+  - id: <short-source-id>
+    resource: <relative-path-to-source-code>#L<start>-L<end>
+    title: <Code element or function name>
+reponix: { cli: 0.1.2, agent: {{agentName}} }
+---
+```
+
+### 4. Citation & Footnote Rules
+1. **Bidirectional Resolution:** Every assertion in the markdown body must cite its source via a footnote reference (e.g., `[^source-id]`).
+2. **Keyed Join:** The footnote label MUST match a declared `sources[].id`.
+3. **Exhaustive Mapping:** Every declared `sources[].id` must be cited in the body at least once, and every footnote in the body must exist in `sources`.
+4. **Verifiable Paths:** `sources[].resource` must point to a real file at repository HEAD with exact 1-indexed line numbers (e.g. `../../../src/api/orders.controller.ts#L18-L64`).
+
+### 5. Cross-Linking Between Concepts
+- Always use **bundle-relative markdown links** starting with `/` to reference concepts across the repository:
+  - `[Orders Table](/contracts/schemas/orders.md)`
+  - `[Inventory Service](/architecture/components/inventory-service.md)`
+  - `[POST /orders](/contracts/apis/post-orders.md)`
+- Avoid relative traversal (`../../...`) when linking to other concepts.
+
+### 6. Reference Concept Example
+```markdown
+---
+type: {{#if (eq agentName "code-inspector")}}API Endpoint{{else if (eq agentName "arch-mapper")}}Component{{else if (eq agentName "modernizer")}}Target Specification{{else if (eq agentName "validator")}}Gap{{else}}Technology Stack{{/if}}
+title: Sample Concept Title
+description: A concise single-sentence summary of this concept.
+tags: [sample, core]
+status: draft
+generated: { by: reponix-{{agentName}}/{{model}}, at: 2026-10-24T09:12:00Z }
+sources:
+  - id: sample-src
+    resource: ../../../src/sample.ts#L10-L40
+    title: SampleImplementation
+reponix: { cli: 0.1.2, agent: {{agentName}} }
+---
+
+# Details
+
+Validates input and interacts with [Related Component](/architecture/components/inventory-service.md).[^sample-src]
+
+[^sample-src]: SampleImplementation
+```

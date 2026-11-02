@@ -225,7 +225,8 @@ coverage/
 GEMINI.md
 shaagent.config.json
 .gemini/
-docs/
+docs/*
+!docs/okf.md
 AGENT.md
 .npmrc
 

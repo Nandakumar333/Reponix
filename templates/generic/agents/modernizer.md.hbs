@@ -79,6 +79,7 @@ Structure the migration into sequential, low-risk phases with explicit exit crit
 
 ---
 
+{{#if (or (eq output.format "legacy") (eq output.format "both"))}}
 ## 3. Output Contract: `docs/reconstruction-spec.md` (or `docs/features/<feature-slug>/reconstruction-spec.md`)
 
 Compile the reconstruction specification using this exact schema:
@@ -184,6 +185,11 @@ channels:
 | Redis cache stampede under peak load | High | Implement mutex locking or probabilistic early expiration | Gracefully fallback to read replicas in database |
 | Outbox event publication failure | Critical | Transactional outbox pattern: event written in same DB tx as entity | Automatic retry loop with alert escalation |
 ```
+{{/if}}
+
+{{#if (or (eq output.format "okf") (eq output.format "both") (eq output.format undefined))}}
+{{> okf-contract agentName="modernizer" ownedSubtree="reconstruction/" model=model}}
+{{/if}}
 
 ---
 

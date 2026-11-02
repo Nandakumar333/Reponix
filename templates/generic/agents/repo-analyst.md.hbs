@@ -106,6 +106,7 @@ Follow this structured protocol to inspect the codebase:
 
 ---
 
+{{#if (or (eq output.format "legacy") (eq output.format "both"))}}
 ## 3. Output Contract: `docs/inventory.md` (or `docs/features/<feature-slug>/inventory.md`)
 
 Compile your complete findings using this exact schema:
@@ -163,6 +164,11 @@ Compile your complete findings using this exact schema:
 - **Kubernetes / Helm:** `deployments`, `services`, `configmaps`, `secrets`, resource requests/limits
 - **CI/CD Pipelines:** Build, test, container image packaging, and deployment workflows
 ```
+{{/if}}
+
+{{#if (or (eq output.format "okf") (eq output.format "both") (eq output.format undefined))}}
+{{> okf-contract agentName="repo-analyst" ownedSubtree="inventory/" model=model}}
+{{/if}}
 
 ---
 

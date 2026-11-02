@@ -24,6 +24,7 @@ export function createConfigFromAnswers(answers: InitAnswers): ReponixConfig {
     skills: {
       installed: answers.installedSkills,
     },
+    output: answers.output,
   };
 }
 

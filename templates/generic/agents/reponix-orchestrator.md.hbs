@@ -167,10 +167,27 @@ If the `validator` reports unverified claims, broken citations, or critical blin
    - Have `validator` inspect only the amended sections.
    - Limit self-healing iterations to a maximum of 2 cycles before escalating unresolved questions to the user.
 
+{{#if (or (eq output.format "okf") (eq output.format "both") (eq output.format undefined))}}
+### OKF Deterministic Finalization & Remediation Protocol
+
+After all sub-agents finish authoring their initial drafts:
+1. **Execute Finalize:** Run the deterministic CLI command:
+   ```bash
+   npx reponix okf finalize
+   ```
+2. **Parse Summary:** Inspect the JSON summary returned by `finalize`. Note `totalConcepts`, `validConcepts`, and any entries in `failedConcepts`.
+3. **Targeted Remediation:** For any failed concept, re-dispatch ONLY the owning agent (`repo-analyst`, `arch-mapper`, `code-inspector`, `modernizer`, or `validator`) with the exact concept path and validation error messages.
+4. **Bounded Self-Healing:** Repeat the re-dispatch & finalize loop **at most 3 times**.
+5. **Report to User:** If any concepts remain invalid after 3 iterations, report the specific defect details to the user.
+6. **Fallback for Terminal-Restricted Harnesses:** If your coding harness does not support executing terminal commands, notify the user:
+   > "Please run `npx reponix okf finalize` in your terminal to complete citation validation, trust stamping, index generation, and update logging."
+{{/if}}
+
 ---
 
 ## 7. Synthesis & Final Delivery
 
+{{#if (or (eq output.format "legacy") (eq output.format "both"))}}
 Upon successful Gate 5 approval, produce an Executive Synthesis in `docs/README.md` (or `docs/features/<feature-slug>/README.md`) and present the completion brief to the user:
 
 ```markdown
@@ -197,3 +214,13 @@ Upon successful Gate 5 approval, produce an Executive Synthesis in `docs/README.
 1. <Immediate action for implementation or migration>
 2. <Risk to mitigate before refactoring>
 ```
+{{/if}}
+
+{{#if (or (eq output.format "okf") (eq output.format "both") (eq output.format undefined))}}
+### OKF Bundle Overview: `overview.md`
+
+In OKF mode, author the root `overview.md` concept (type: `Repository`) to synthesize the repository intelligence:
+
+{{> okf-contract agentName="reponix-orchestrator" ownedSubtree="overview.md" model=model}}
+{{/if}}
+

@@ -75,6 +75,47 @@
           "items": { "type": "string" }
         }
       }
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": ["legacy", "okf", "both"],
+          "default": "okf"
+        },
+        "okf": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "string",
+              "enum": ["0.2"],
+              "default": "0.2"
+            },
+            "root": {
+              "type": "string",
+              "default": "reponix"
+            },
+            "emitV01Timestamp": {
+              "type": "boolean",
+              "default": true
+            },
+            "sourceLinks": {
+              "type": "string",
+              "enum": ["relative", "permalink"],
+              "default": "relative"
+            },
+            "staleAfterDays": {
+              "type": "number",
+              "default": 90
+            },
+            "recordGitAuthors": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      }
     }
   },
   "required": ["platform", "scope", "project"]

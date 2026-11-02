@@ -6,7 +6,7 @@ import { promptInit } from './prompts.js';
 import { renderAgents } from './engine/template.js';
 import { installSkill } from './install-skill.js';
 import { saveConfig } from './engine/manifest.js';
-import type { Platform, Scope, Suite, InitAnswers } from './types.js';
+import type { Platform, Scope, Suite, InitAnswers, OutputFormat } from './types.js';
 
 export function initCommand(): Command {
   const cmd = new Command('init');
@@ -19,6 +19,7 @@ export function initCommand(): Command {
     .option('--project', 'Install into current project repository')
     .option('--global', 'Install into user home directory')
     .option('--suite <type>', 'Suite: intelligence, modernization, or full')
+    .option('--output <format>', 'Output format: legacy, okf, or both', 'okf')
     .option('--dry-run', 'Preview changes without writing files to disk')
     .option('--target-dir <path>', 'Custom directory to initialize')
     .action(async (opts) => {
@@ -40,6 +41,7 @@ export function initCommand(): Command {
 
       const platform = opts.platform as Platform | undefined;
       const suite = opts.suite as Suite | undefined;
+      const outputFormat = opts.output as OutputFormat | undefined;
 
       let answers: InitAnswers;
 
@@ -47,6 +49,7 @@ export function initCommand(): Command {
         // Non-interactive defaults
         const resolvedPlatform: Platform = platform || 'gemini-cli';
         const resolvedSuite: Suite = suite || 'modernization';
+        const resolvedOutput: OutputFormat = outputFormat || 'okf';
         const coreAgents = [
           'reponix-orchestrator',
           'repo-analyst',
@@ -55,6 +58,11 @@ export function initCommand(): Command {
           'modernizer',
           'validator',
         ];
+
+        const installedSkills = ['graphify', 'arch-review', 'modernization'];
+        if (resolvedOutput === 'okf' || resolvedOutput === 'both') {
+          installedSkills.push('okf');
+        }
 
         answers = {
           platform: resolvedPlatform,
@@ -65,7 +73,18 @@ export function initCommand(): Command {
           model: 'gemini-3.8-flash',
           coreAgents,
           optionalAgents: [],
-          installedSkills: ['graphify', 'arch-review', 'modernization'],
+          installedSkills,
+          output: {
+            format: resolvedOutput,
+            okf: {
+              version: '0.2',
+              root: 'reponix',
+              emitV01Timestamp: true,
+              sourceLinks: 'relative',
+              staleAfterDays: 90,
+              recordGitAuthors: false,
+            },
+          },
         };
       } else {
         answers = await promptInit({
@@ -73,6 +92,7 @@ export function initCommand(): Command {
           scope,
           suite,
           projectName: path.basename(targetDir),
+          output: outputFormat ? { format: outputFormat } : undefined,
         });
       }
 

@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import path from 'node:path';
-import type { Platform, Scope, Suite, InitAnswers } from './types.js';
+import type { Platform, Scope, Suite, InitAnswers, OutputFormat, OutputConfig } from './types.js';
 
 export async function promptInit(defaults?: Partial<InitAnswers>): Promise<InitAnswers> {
   p.intro(pc.bgCyan(pc.black(' Reponix — Repository Intelligence & Modernization ')));
@@ -77,6 +77,21 @@ export async function promptInit(defaults?: Partial<InitAnswers>): Promise<InitA
     process.exit(0);
   }
 
+  const outputFormat = defaults?.output?.format || (await p.select({
+    message: 'Select Knowledge Output Format:',
+    options: [
+      { value: 'okf' as OutputFormat, label: 'Open Knowledge Format (OKF v0.2 - Recommended)', hint: 'Verifiable bundle under reponix/' },
+      { value: 'legacy' as OutputFormat, label: 'Legacy Markdown', hint: 'Six monolithic files under docs/' },
+      { value: 'both' as OutputFormat, label: 'Both', hint: 'Emit both legacy docs and OKF bundle' },
+    ],
+    initialValue: 'okf' as OutputFormat,
+  })) as OutputFormat;
+
+  if (p.isCancel(outputFormat)) {
+    p.cancel('Operation cancelled.');
+    process.exit(0);
+  }
+
   let coreAgents: string[] = [];
   let optionalAgents: string[] = [];
 
@@ -103,6 +118,21 @@ export async function promptInit(defaults?: Partial<InitAnswers>): Promise<InitA
   }
 
   const installedSkills = ['graphify', 'arch-review', 'modernization'];
+  if (outputFormat === 'okf' || outputFormat === 'both') {
+    installedSkills.push('okf');
+  }
+
+  const outputConfig: OutputConfig = {
+    format: outputFormat,
+    okf: {
+      version: '0.2',
+      root: 'reponix',
+      emitV01Timestamp: true,
+      sourceLinks: 'relative',
+      staleAfterDays: 90,
+      recordGitAuthors: false,
+    },
+  };
 
   return {
     platform,
@@ -115,5 +145,6 @@ export async function promptInit(defaults?: Partial<InitAnswers>): Promise<InitA
     coreAgents,
     optionalAgents,
     installedSkills,
+    output: outputConfig,
   };
 }

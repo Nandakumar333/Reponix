@@ -45,27 +45,54 @@ reponix/
 │       │   ├── types.ts            # Shared CLI and config definitions
 │       │   ├── platforms/
 │       │   │   └── index.ts        # Scope-aware platform path resolver
-│       │   └── engine/
-│       │       ├── template.ts     # Handlebars template renderer + platform formatter
-│       │       ├── paths.ts        # Package resource resolver (dev monorepo vs bundled dist)
-│       │       └── manifest.ts     # Reads/writes reponix.config.json
+│       │   ├── engine/
+│       │   │   ├── template.ts     # Handlebars template renderer + platform formatter
+│       │   │   ├── paths.ts        # Package resource resolver (dev monorepo vs bundled dist)
+│       │   │   └── manifest.ts     # Reads/writes reponix.config.json
+│       │   └── okf/                # Open Knowledge Format (OKF v0.2) engine
+│       │       ├── types.ts        # OKF Bundle, Concept, Frontmatter types
+│       │       ├── spec-adapter.ts # OKF v0.2 specification adapter
+│       │       ├── parse.ts        # YAML AST round-tripping preserving comments
+│       │       ├── bundle.ts       # Secure bundle loader & traversal guards
+│       │       ├── cite.ts         # Footnote citation & line bounds checker
+│       │       ├── links.ts        # Cross-link extraction & resolution
+│       │       ├── trust.ts        # Trust tier transitions & verification
+│       │       ├── index-gen.ts    # Idempotent index.md generation
+│       │       ├── log.ts          # ISO date-grouped changelog manager
+│       │       ├── git.ts          # Git commit SHA, permalinks, author extraction
+│       │       ├── stale.ts        # Time & Git staleness evaluator
+│       │       ├── secrets.ts      # Secret pattern scanner pre-flight
+│       │       ├── manifest.ts     # .reponix/okf-manifest.json tracker
+│       │       ├── plan.ts         # Incremental agent update planner
+│       │       ├── migrate.ts      # Legacy monolithic docs converter
+│       │       ├── pack.ts         # Single-artifact packager (MD, JSON, TAR)
+│       │       ├── validate.ts     # Two-layer validator (spec + profile)
+│       │       ├── finalize.ts     # End-to-end pipeline orchestrator
+│       │       ├── report.ts       # Text, JSON, and SARIF formatters
+│       │       └── command.ts      # `reponix okf` CLI subcommands
 │       ├── scripts/
-│       │   └── bundle.js           # esbuild bundler + asset copy
-│       ├── tests/                  # CLI and engine unit tests
+│       │   └── bundle.js           # tsc bundler + asset copy
+│       ├── tests/                  # Test suites (vitest)
 │       ├── package.json
 │       └── tsconfig.json
 │
 ├── templates/
 │   └── generic/                    # Single template set for all platforms
-│       └── agents/
-│           ├── reponix-orchestrator.md.hbs
-│           ├── repo-analyst.md.hbs
-│           ├── arch-mapper.md.hbs
-│           ├── code-inspector.md.hbs
-│           ├── modernizer.md.hbs
-│           └── validator.md.hbs
+│       ├── agents/
+│       │   ├── reponix-orchestrator.md.hbs
+│       │   ├── repo-analyst.md.hbs
+│       │   ├── arch-mapper.md.hbs
+│       │   ├── code-inspector.md.hbs
+│       │   ├── modernizer.md.hbs
+│       │   └── validator.md.hbs
+│       └── partials/
+│           └── okf-contract.md.hbs # Reusable OKF output contract partial
 │
 ├── skills/                         # Built-in installable skills
+│   ├── okf/                        # Open Knowledge Format (OKF v0.2) skill
+│   │   ├── SKILL.md
+│   │   ├── NOTICE
+│   │   └── reference/              # Vendored spec, profile, and types
 │   ├── graphify/
 │   │   └── SKILL.md
 │   ├── arch-review/
@@ -74,7 +101,8 @@ reponix/
 │       └── SKILL.md
 │
 ├── docs/
-│   └── PRD.md
+│   ├── PRD.md
+│   └── okf.md                      # OKF user guide and command reference
 ├── reponix.config.schema.json      # JSON Schema for project configuration
 ├── package.json                    # Monorepo root configuration
 └── README.md
@@ -91,6 +119,7 @@ reponix/
 ### Generic Template Structure
 - Frontmatter containing metadata (`name`, `description`, `model`).
 - Markdown body detailing agent persona, tools, workflows, and output format.
+- Output contract dynamically selected via `output.format` (`okf`, `legacy`, or `both`) leveraging `okf-contract.md.hbs`.
 
 ### Platform Adapters & Formats
 
@@ -104,6 +133,43 @@ reponix/
 | **Codex** | Merged AGENTS.md format | `.md` | `.codex/agents/` + `AGENTS.md` |
 | **Continue** | Prompt structure | `.md` | `.continue/prompts/` |
 | **Windsurf** | Rule structure | `.md` | `.windsurf/rules/` |
+
+---
+
+## Open Knowledge Format (OKF v0.2) Subsystem
+
+Reponix incorporates a complete, deterministic OKF v0.2 processing pipeline governed by the principle: **"The LLM writes, the CLI guarantees"**.
+
+```
+Agent Markdown + Footnotes [^id]
+          │
+          ▼
+┌──────────────────────────────────────────────┐
+│          reponix okf finalize                │
+├──────────────────────────────────────────────┤
+│ 1. Secret Scanning Pre-Flight                │
+│    Detects AWS/GitHub/Slack/Stripe/priv keys │
+│ 2. Citation Verification                     │
+│    Footnote [^id] <-> sources[].id matching  │
+│    Source file existence & line range bounds │
+│ 3. Link Resolution                           │
+│    Validates bundle-relative `/...` links    │
+│ 4. Trust Stamping                            │
+│    Sets generated, stale_after (+90d)        │
+│    Awards machine-confirmed status           │
+│ 5. Provenance Enrichment                     │
+│    Records Git SHA, permalinks, authors      │
+│ 6. Idempotent Index Generation               │
+│    Generates directory index.md files        │
+│ 7. Changelog Appending                       │
+│    Appends structured diff to log.md         │
+│ 8. Change Manifest Tracking                  │
+│    Saves .reponix/okf-manifest.json          │
+└──────────────────────────────────────────────┘
+          │
+          ▼
+   Verified OKF Bundle (reponix/)
+```
 
 ---
 

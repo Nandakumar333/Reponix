@@ -13,9 +13,29 @@ Handlebars.registerHelper('or', (...args) => {
   args.pop();
   return args.some(Boolean);
 });
+Handlebars.registerHelper('and', (...args) => {
+  args.pop();
+  return args.every(Boolean);
+});
 Handlebars.registerHelper('includes', (arr: unknown, value: unknown) => {
   return Array.isArray(arr) && arr.includes(value);
 });
+
+export function registerPartials(): void {
+  const partialsDir = path.join(getTemplatesRoot(), 'generic', 'partials');
+  if (fs.existsSync(partialsDir)) {
+    const files = fs.readdirSync(partialsDir).filter(f => f.endsWith('.hbs'));
+    for (const file of files) {
+      const name = path.basename(file, '.md.hbs').replace(/\.hbs$/, '');
+      const content = fs.readFileSync(path.join(partialsDir, file), 'utf-8');
+      Handlebars.registerPartial(name, content);
+      Handlebars.registerPartial(path.basename(file, '.hbs'), content);
+    }
+  }
+}
+
+// Auto-register available partials
+registerPartials();
 
 export function parseFrontmatter(content: string): { frontmatter: Record<string, any>; body: string } {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
@@ -158,12 +178,15 @@ export async function renderAgents(
   const allAgents = [...answers.coreAgents, ...answers.optionalAgents];
   const written: string[] = [];
 
+  registerPartials();
+
   const context = {
     projectName: answers.projectName,
     projectDescription: answers.projectDescription,
     techStack: answers.techStack.join(', '),
     targetStack: answers.targetStack?.join(', '),
     model: answers.model || 'gemini-3.8-flash',
+    output: answers.output || { format: 'okf' },
   };
 
   const templatesDir = path.join(getTemplatesRoot(), 'generic', 'agents');

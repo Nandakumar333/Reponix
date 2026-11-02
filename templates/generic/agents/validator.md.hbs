@@ -72,6 +72,7 @@ Execute your audit through these 5 inspection steps:
 
 ---
 
+{{#if (or (eq output.format "legacy") (eq output.format "both"))}}
 ## 3. Output Contract: `docs/validation-report.md` (or `docs/features/<feature-slug>/validation-report.md`)
 
 Compile your validation audit into `docs/validation-report.md` using this exact schema:
@@ -120,6 +121,20 @@ Compile your validation audit into `docs/validation-report.md` using this exact 
 1. **For `code-inspector`:** Re-examine `SignInManager.cs#L140` to extract Rule `BR-02` (Account Lockout Policy).
 2. **For `modernizer`:** Update cryptographic section in `docs/reconstruction-spec.md` to specify PBKDF2 password compatibility so legacy users can log in without password resets.
 ```
+{{/if}}
+
+{{#if (or (eq output.format "okf") (eq output.format "both") (eq output.format undefined))}}
+## 3. Open Knowledge Format (OKF) Output Contract
+
+In OKF mode, your role is to audit findings and record issues:
+- **Owning Subtree:** `validation/`
+- **Artifacts to Emit:**
+  1. `validation/report.md`: Type `Validation Report` summarizing the audit metrics and findings.
+  2. `validation/gaps/<id>.md`: Type `Gap` (one concept per identified gap or evidence defect).
+- **Deterministic Trust Stamping:** Trust stamping (`status: stable`, `verified: { by: process:reponix-validator }`) is performed mechanically by the Reponix CLI (`reponix okf finalize`), NOT by this agent. You must author concepts with `status: draft`.
+
+{{> okf-contract agentName="validator" ownedSubtree="validation/" model=model}}
+{{/if}}
 
 ---
 

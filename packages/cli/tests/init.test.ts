@@ -107,4 +107,42 @@ describe('renderAgents and skill installation', () => {
     const instructionsContent = fs.readFileSync(instructionsPath, 'utf-8');
     expect(instructionsContent).toContain('primary agent');
   });
+
+  it('installs the okf skill and preserves output configuration', async () => {
+    const dest = await installSkill('okf', 'gemini-cli', 'project', { targetDir: tmpDir });
+    expect(dest).not.toBeNull();
+    if (dest) {
+      expect(fs.existsSync(path.join(dest, 'SKILL.md'))).toBe(true);
+      expect(fs.existsSync(path.join(dest, 'reference', 'SPEC.md'))).toBe(true);
+      expect(fs.existsSync(path.join(dest, 'reference', 'profile.md'))).toBe(true);
+      expect(fs.existsSync(path.join(dest, 'reference', 'types.md'))).toBe(true);
+      expect(fs.existsSync(path.join(dest, 'NOTICE'))).toBe(true);
+    }
+  });
+
+  it('defaults to okf format and renders OKF contract when output is omitted', async () => {
+    const answers: InitAnswers = {
+      platform: 'gemini-cli',
+      scope: 'project',
+      suite: 'intelligence',
+      projectName: 'DefaultOkfProject',
+      techStack: ['TypeScript'],
+      model: 'gemini-3.8-flash',
+      coreAgents: ['code-inspector'],
+      optionalAgents: [],
+      installedSkills: ['okf'],
+      // output omitted to test default
+    };
+
+    const written = await renderAgents(answers, { targetDir: tmpDir });
+    expect(written.length).toBeGreaterThanOrEqual(1);
+
+    const inspectorPath = path.join(tmpDir, '.gemini', 'agents', 'code-inspector.md');
+    expect(fs.existsSync(inspectorPath)).toBe(true);
+
+    const content = fs.readFileSync(inspectorPath, 'utf-8');
+    expect(content).toContain('Open Knowledge Format (OKF) v0.2 Output Contract');
+    expect(content).toContain('- **Owning Subtree:** `contracts/`');
+    expect(content).not.toContain('## 3. Output Contract: `docs/contracts.md`');
+  });
 });

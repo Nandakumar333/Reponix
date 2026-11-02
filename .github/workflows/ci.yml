@@ -42,5 +42,11 @@ jobs:
       - name: Run Build
         run: npm run build
 
+      - name: Validate OKF Bundle (if present)
+        run: |
+          if [ -d "reponix" ]; then
+            node packages/cli/dist/index.js okf validate reponix --strict
+          fi
+
       - name: Verify Package Tarball (Dry Run)
         run: npm pack --dry-run --workspace=packages/cli

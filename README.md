@@ -46,22 +46,70 @@ User → Reponix-Orchestrator
 
 ### Core Agents
 
-| Agent | Role | Output Artifact |
-|---|---|---|
-| **Reponix-Orchestrator** | Coordinates the entire intelligence and modernization lifecycle. All sub-agents report through it. | Synthesis & Roadmaps |
-| **Repo Analyst** | Discovers stack, dependencies, manifest files, directory topologies, and build tools. | `docs/inventory.md` |
-| **Arch Mapper** | Maps system topology, service boundaries, data flows, and renders visual Mermaid diagrams. | `docs/architecture.md` |
-| **Code Inspector** | Extracts REST/GraphQL endpoints, database schemas/migrations, domain entities, and core business rules. | `docs/contracts.md` |
-| **Modernizer** | Produces target-neutral reconstruction blueprints, API specifications, and phased refactoring plans. | `docs/reconstruction-spec.md` |
-| **Validator** | Audits generated documentation and migration blueprints against real source code evidence to guarantee zero hallucination. | `docs/validation-report.md` |
+| Agent | Role | Output Artifact (OKF v0.2) | Legacy Output |
+|---|---|---|---|
+| **Reponix-Orchestrator** | Coordinates the entire intelligence and modernization lifecycle. All sub-agents report through it. | `reponix/overview.md` & `index.md` | `docs/README.md` |
+| **Repo Analyst** | Discovers stack, dependencies, manifest files, directory topologies, and build tools. | `reponix/inventory/*.md` | `docs/inventory.md` |
+| **Arch Mapper** | Maps system topology, service boundaries, data flows, and renders visual Mermaid diagrams. | `reponix/architecture/*.md` | `docs/architecture.md` |
+| **Code Inspector** | Extracts REST/GraphQL endpoints, database schemas/migrations, domain entities, and core business rules. | `reponix/contracts/*.md` | `docs/contracts.md` |
+| **Modernizer** | Produces target-neutral reconstruction blueprints, API specifications, and phased refactoring plans. | `reponix/procedures/*.md` | `docs/reconstruction-spec.md` |
+| **Validator** | Audits generated documentation and migration blueprints against real source code evidence to guarantee zero hallucination. | `reponix/validation/*.md` | `docs/validation-report.md` |
 
 ### Built-in Skills
 
 | Skill | Role |
 |---|---|
+| **`okf`** | Open Knowledge Format (OKF v0.2) authoring, profile validation, and provenance rules. |
 | **`graphify`** | Code relationship extraction, call trees, and import graph queries. |
 | **`arch-review`** | Architectural fitness checks, layer separation validation, and Mermaid visualization. |
 | **`modernization`** | Target-neutral specification formatting and migration blueprint generator. |
+
+---
+
+## Open Knowledge Format (OKF v0.2)
+
+Reponix defaults to emitting verifiable **OKF v0.2 bundles** under `reponix/`. Each document is an atomic, citation-backed concept file with YAML frontmatter, verified footnote references (`[^id]`), and machine/human trust tiers.
+
+### OKF CLI Toolset
+
+Manage and verify your knowledge bundles using the `reponix okf` command suite:
+
+```bash
+# Validate bundle against spec and profile (supports --strict and --format sarif)
+npx reponix okf validate
+
+# Run the full pipeline (cite -> links -> trust -> index -> log -> validate)
+npx reponix okf finalize
+
+# Record human sign-off on a concept
+npx reponix okf verify contracts/users --by human:alice
+
+# Check for time-expired or git-modified stale concepts
+npx reponix okf stale
+
+# Calculate incremental agent update plan from git diff
+npx reponix okf plan-update
+
+# Migrate legacy monolithic docs/ to OKF bundle
+npx reponix okf migrate --from docs --to reponix
+
+# Package bundle into single Markdown, JSON, or tarball artifact
+npx reponix okf pack --format markdown --out bundle.md
+```
+
+For complete documentation on frontmatter schemas, trust tiers, and bundle layout, see [docs/okf.md](docs/okf.md).
+
+### Switching to Legacy Output
+
+If you prefer monolithic markdown files under `docs/`, set `output.format` to `"legacy"` in `reponix.config.json`:
+
+```json
+{
+  "output": {
+    "format": "legacy"
+  }
+}
+```
 
 ---
 

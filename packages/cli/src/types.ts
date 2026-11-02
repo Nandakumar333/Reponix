@@ -42,6 +42,23 @@ export interface ReponixConfig {
   skills: {
     installed: string[];
   };
+  output?: OutputConfig;
+}
+
+export type OutputFormat = 'legacy' | 'okf' | 'both';
+
+export interface OkfConfig {
+  version?: string;
+  root?: string;
+  emitV01Timestamp?: boolean;
+  sourceLinks?: 'relative' | 'permalink';
+  staleAfterDays?: number;
+  recordGitAuthors?: boolean;
+}
+
+export interface OutputConfig {
+  format?: OutputFormat;
+  okf?: OkfConfig;
 }
 
 export interface InitAnswers {
@@ -56,9 +73,11 @@ export interface InitAnswers {
   coreAgents: string[];
   optionalAgents: string[];
   installedSkills: string[];
+  output?: OutputConfig;
 }
 
 export interface RenderOptions {
   dryRun?: boolean;
   targetDir?: string;
 }
+

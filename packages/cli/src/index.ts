@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { initCommand } from './init.js';
 import { listCommand } from './list.js';
 import { installSkill } from './install-skill.js';
+import { okfCommand } from './okf/command.js';
 import pc from 'picocolors';
 
 const program = new Command();
@@ -15,6 +16,9 @@ program
 
 // Add init command
 program.addCommand(initCommand());
+
+// Add okf command
+program.addCommand(okfCommand());
 
 // Add list command
 program

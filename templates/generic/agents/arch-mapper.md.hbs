@@ -86,6 +86,7 @@ When generating Mermaid diagrams, follow these strict guardrails:
 
 ---
 
+{{#if (or (eq output.format "legacy") (eq output.format "both"))}}
 ## 4. Output Contract: `docs/architecture.md` (or `docs/features/<feature-slug>/architecture.md`)
 
 Compile the architecture specification using this exact schema:
@@ -214,6 +215,11 @@ sequenceDiagram
 - **Distributed Failure Resilience:** Are Redis connection timeouts handled with graceful database fallback? Are Kafka consumers idempotent?
 - **Reconstruction Readiness:** Can this distributed slice run independently in a containerized test harness?
 ```
+{{/if}}
+
+{{#if (or (eq output.format "okf") (eq output.format "both") (eq output.format undefined))}}
+{{> okf-contract agentName="arch-mapper" ownedSubtree="architecture/" model=model}}
+{{/if}}
 
 ---
 

@@ -83,6 +83,7 @@ Follow this structured protocol to inspect the codebase:
 
 ---
 
+{{#if (or (eq output.format "legacy") (eq output.format "both"))}}
 ## 3. Output Contract: `docs/contracts.md` (or `docs/features/<feature-slug>/contracts.md`)
 
 Compile all extracted contracts and rules using this exact schema:
@@ -185,6 +186,11 @@ Compile all extracted contracts and rules using this exact schema:
 - **Description:** Orders cannot be committed without an accompanying `OrderCreatedEvent` record written to the outbox or published to Kafka with `acks=all`.
 - **Source Citation:** `src/events/orderProducer.ts#L45-L80`
 ```
+{{/if}}
+
+{{#if (or (eq output.format "okf") (eq output.format "both") (eq output.format undefined))}}
+{{> okf-contract agentName="code-inspector" ownedSubtree="contracts/" model=model}}
+{{/if}}
 
 ---
 
