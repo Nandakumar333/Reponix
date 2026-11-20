@@ -1,6 +1,7 @@
 import Handlebars from 'handlebars';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import YAML from 'yaml';
 import type { InitAnswers, Platform, RenderOptions } from '../types.js';
 import { getPlatformPaths } from '../platforms/index.js';
@@ -50,13 +51,25 @@ export function parseFrontmatter(content: string): { frontmatter: Record<string,
   }
 }
 
-function transformForPlatform(
+export function getPrimaryAgent(allAgents: string[]): string {
+  if (allAgents.includes('reponix-orchestrator')) return 'reponix-orchestrator';
+  if (allAgents.includes('orchestrator')) return 'orchestrator';
+  return allAgents[0] || 'reponix-orchestrator';
+}
+
+export function isAgentPrimary(agentName: string, allAgents: string[]): boolean {
+  return agentName === getPrimaryAgent(allAgents);
+}
+
+export function transformForPlatform(
   content: string,
   agentName: string,
-  platform: Platform
+  platform: Platform,
+  allAgents: string[] = []
 ): string {
   const { frontmatter, body } = parseFrontmatter(content);
   const description = frontmatter.description || `${agentName} agent for Reponix`;
+  const isPrimary = isAgentPrimary(agentName, allAgents);
 
   switch (platform) {
     case 'gemini-cli':
@@ -67,13 +80,13 @@ function transformForPlatform(
       return `---
 description: ${description}
 globs: *
-alwaysApply: false
+alwaysApply: ${isPrimary ? 'true' : 'false'}
 ---
 
 ${body}`;
 
     case 'opencode': {
-      const mode = frontmatter.mode || (agentName === 'reponix-orchestrator' || agentName === 'orchestrator' ? 'primary' : 'subagent');
+      const mode = isPrimary ? 'primary' : 'subagent';
       const modelLine = frontmatter.model ? `\nmodel: ${frontmatter.model}` : '';
       return `---
 description: ${description}
@@ -83,6 +96,17 @@ mode: ${mode}${modelLine}
 ${body}`;
     }
 
+    case 'windsurf': {
+      const trigger = isPrimary ? 'always_on' : 'model_decision';
+      return `---
+trigger: ${trigger}
+description: ${description}
+---
+
+${body}`;
+    }
+
+    case 'continue':
     case 'copilot':
     case 'copilot-cli':
       return `---
@@ -103,6 +127,7 @@ export function generateRootInstruction(
   context: { projectName: string; techStack?: string; targetStack?: string }
 ): string {
   const { projectName, techStack, targetStack } = context;
+  const primaryAgent = getPrimaryAgent(allAgents);
 
   switch (platform) {
     case 'gemini-cli': {
@@ -112,30 +137,28 @@ export function generateRootInstruction(
 ## Project Context
 - **Project:** ${projectName}
 ${techStack ? `- **Source Stack:** ${techStack}\n` : ''}${targetStack ? `- **Target Stack:** ${targetStack}\n` : ''}
-
 ## Multi-Agent Architecture
 ${imports}
 
-Start by invoking the **reponix-orchestrator** agent when beginning repository analysis or modernization.
+Start by invoking the **${primaryAgent}** agent when beginning repository analysis or modernization.
 `;
     }
 
     case 'claude-code': {
-      const list = allAgents.map(a => `- **${a}**: See \`.claude/agents/${a}.md\``).join('\n');
+      const list = allAgents.map(a => `- **${a}**: See \`.claude/agents/${a}.md\` (${(a === primaryAgent) ? 'primary' : 'subagent'})`).join('\n');
       return `# Reponix — Claude Code Instructions
 
 Project: **${projectName}**
 ${techStack ? `Source Tech Stack: ${techStack}\n` : ''}
-
 ## Active Reponix Agents
 ${list}
 
-Always address the **reponix-orchestrator** agent to coordinate repository discovery and reconstruction blueprints.
+Always address the **${primaryAgent}** agent to coordinate repository discovery and reconstruction blueprints.
 `;
     }
 
     case 'opencode': {
-      const list = allAgents.map(a => `- **${a}**: \`.opencode/agents/${a}.md\` (${(a === 'reponix-orchestrator' || a === 'orchestrator') ? 'primary' : 'subagent'})`).join('\n');
+      const list = allAgents.map(a => `- **${a}**: \`.opencode/agents/${a}.md\` (${(a === primaryAgent) ? 'primary' : 'subagent'})`).join('\n');
       return `# Reponix — OpenCode Agent Instructions
 
 Project: **${projectName}**
@@ -143,7 +166,63 @@ ${techStack ? `- **Source Stack:** ${techStack}\n` : ''}${targetStack ? `- **Tar
 ## Configured Agents
 ${list}
 
-The **reponix-orchestrator** is the **primary agent** that interacts with the user and coordinates the archaeology and modernization workflow.
+The **${primaryAgent}** is the **primary agent** that interacts with the user and coordinates the archaeology and modernization workflow.
+All other agents operate as specialized subagents under the orchestrator's direction.
+`;
+    }
+
+    case 'cursor': {
+      const list = allAgents.map(a => `- **${a}**: \`.cursor/rules/${a}.mdc\` (${(a === primaryAgent) ? 'primary (alwaysApply: true)' : 'subagent (alwaysApply: false)'})`).join('\n');
+      return `# Reponix — Cursor Agent Rules
+
+Project: **${projectName}**
+${techStack ? `- **Source Stack:** ${techStack}\n` : ''}${targetStack ? `- **Target Stack:** ${targetStack}\n` : ''}
+## Configured Agents
+${list}
+
+The **${primaryAgent}** rule is configured as the **primary agent** (\`alwaysApply: true\`) to coordinate repository discovery and modernization.
+All other rules operate as specialized subagents (\`alwaysApply: false\`) invoked when needed.
+`;
+    }
+
+    case 'windsurf': {
+      const list = allAgents.map(a => `- **${a}**: \`.windsurf/rules/${a}.md\` (${(a === primaryAgent) ? 'primary (always_on)' : 'subagent (model_decision)'})`).join('\n');
+      return `# Reponix — Windsurf Rules Instructions
+
+Project: **${projectName}**
+${techStack ? `- **Source Stack:** ${techStack}\n` : ''}${targetStack ? `- **Target Stack:** ${targetStack}\n` : ''}
+## Configured Rules
+${list}
+
+The **${primaryAgent}** is configured as the **primary agent** (\`trigger: always_on\`) to coordinate repository discovery and modernization.
+All other rules are configured with \`trigger: model_decision\` to be activated contextually.
+`;
+    }
+
+    case 'continue': {
+      const list = allAgents.map(a => `- **${a}**: \`.continue/prompts/${a}.md\` (${(a === primaryAgent) ? 'primary' : 'subagent'})`).join('\n');
+      return `# Reponix — Continue Instructions
+
+Project: **${projectName}**
+${techStack ? `- **Source Stack:** ${techStack}\n` : ''}${targetStack ? `- **Target Stack:** ${targetStack}\n` : ''}
+## Configured Prompts
+${list}
+
+Use the **${primaryAgent}** as the primary entry point for repository discovery and modernization.
+`;
+    }
+
+    case 'copilot':
+    case 'copilot-cli': {
+      const list = allAgents.map(a => `- **${a}**: (${(a === primaryAgent) ? 'primary' : 'subagent'})`).join('\n');
+      return `# Reponix — GitHub Copilot Agent Instructions
+
+Project: **${projectName}**
+${techStack ? `- **Source Stack:** ${techStack}\n` : ''}${targetStack ? `- **Target Stack:** ${targetStack}\n` : ''}
+## Configured Agents
+${list}
+
+The **${primaryAgent}** is the primary agent to coordinate repository discovery and modernization.
 All other agents operate as specialized subagents under the orchestrator's direction.
 `;
     }
@@ -157,7 +236,7 @@ Project: **${projectName}**
 ## Configured Agents
 ${list}
 
-Use the **reponix-orchestrator** as the entry point for all workflows.
+Use the **${primaryAgent}** as the entry point for all workflows.
 `;
     }
   }
@@ -176,7 +255,9 @@ export async function renderAgents(
   }
 
   const allAgents = [...answers.coreAgents, ...answers.optionalAgents];
+  const primaryAgent = getPrimaryAgent(allAgents);
   const written: string[] = [];
+  const agentDescriptions: Record<string, string> = {};
 
   registerPartials();
 
@@ -194,6 +275,7 @@ export async function renderAgents(
   if (mergedFile) {
     // Single merged AGENTS.md file
     let combined = `# Reponix Agent Suite for ${answers.projectName}\n\n`;
+    combined += `Primary agent: **${primaryAgent}**.\n\n`;
     for (const agentName of allAgents) {
       const tplPath = path.join(templatesDir, `${agentName}.md.hbs`);
       if (!fs.existsSync(tplPath)) continue;
@@ -218,7 +300,9 @@ export async function renderAgents(
       const raw = fs.readFileSync(tplPath, 'utf-8');
       const compiled = Handlebars.compile(raw);
       let rendered = compiled(context);
-      rendered = transformForPlatform(rendered, agentName, answers.platform);
+      const parsed = parseFrontmatter(rendered);
+      agentDescriptions[agentName] = parsed.frontmatter.description || `${agentName} agent for Reponix`;
+      rendered = transformForPlatform(rendered, agentName, answers.platform, allAgents);
 
       const outFile = path.join(agentsDir, `${agentName}${extension}`);
       if (!dryRun) {
@@ -235,6 +319,44 @@ export async function renderAgents(
         fs.writeFileSync(rootInstructionFile, rootContent, 'utf-8');
       }
       written.push(rootInstructionFile);
+    }
+
+    if (answers.platform === 'opencode') {
+      const baseDir = options?.targetDir || (answers.scope === 'global' ? os.homedir() : process.cwd());
+      const configFile = platformPaths.configFile || (
+        answers.scope === 'global'
+          ? path.join(baseDir, '.config', 'opencode', 'opencode.json')
+          : path.join(baseDir, 'opencode.json')
+      );
+
+      let config: Record<string, any> = {};
+      if (fs.existsSync(configFile)) {
+        try {
+          config = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+        } catch {
+          config = {};
+        }
+      }
+
+      config.$schema = config.$schema || 'https://opencode.ai/config.json';
+      config.default_agent = primaryAgent;
+      config.agent = config.agent || {};
+
+      for (const agentName of allAgents) {
+        const isPrimary = isAgentPrimary(agentName, allAgents);
+        const desc = agentDescriptions[agentName] || `${agentName} agent for Reponix`;
+        config.agent[agentName] = {
+          ...(config.agent[agentName] || {}),
+          mode: isPrimary ? 'primary' : 'subagent',
+          description: desc,
+        };
+      }
+
+      if (!dryRun) {
+        fs.mkdirSync(path.dirname(configFile), { recursive: true });
+        fs.writeFileSync(configFile, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+      }
+      written.push(configFile);
     }
   }
 

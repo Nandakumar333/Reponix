@@ -1,12 +1,19 @@
 import path from 'node:path';
 import os from 'node:os';
+import fs from 'node:fs';
 import type { Platform, Scope, PlatformPaths } from '../types.js';
 
 export function getPlatformPaths(platform: Platform, scope: Scope, customBaseDir?: string): PlatformPaths {
   const baseDir = customBaseDir || (scope === 'global' ? os.homedir() : process.cwd());
 
   switch (platform) {
-    case 'opencode':
+    case 'opencode': {
+      const dotConfig = path.join(baseDir, '.opencode', 'opencode.json');
+      const rootConfig = path.join(baseDir, 'opencode.json');
+      const configFile = scope === 'global'
+        ? path.join(baseDir, '.config', 'opencode', 'opencode.json')
+        : (fs.existsSync(dotConfig) ? dotConfig : rootConfig);
+
       return {
         agentsDir: scope === 'global'
           ? path.join(baseDir, '.config', 'opencode', 'agents')
@@ -15,7 +22,9 @@ export function getPlatformPaths(platform: Platform, scope: Scope, customBaseDir
         rootInstructionFile: scope === 'global'
           ? path.join(baseDir, '.config', 'opencode', 'instructions.md')
           : path.join(baseDir, '.opencode', 'instructions.md'),
+        configFile,
       };
+    }
 
     case 'claude-code':
       return {

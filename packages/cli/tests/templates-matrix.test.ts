@@ -78,13 +78,14 @@ describe('Template Matrix Rendering (All 9 Platforms x 3 Output Modes)', () => {
             const content = fs.readFileSync(filePath, 'utf-8');
             expect(content.length).toBeGreaterThan(50);
 
-            // Test mode-specific assertions on agent files (ignore root instruction files)
+            // Test mode-specific assertions on agent files (ignore root instruction files and config files)
             const isRootInstruction =
               filePath.endsWith('GEMINI.md') ||
               filePath.endsWith('CLAUDE.md') ||
               filePath.endsWith('instructions.md') ||
               filePath.endsWith('.cursorrules') ||
               filePath.endsWith('rules.md') ||
+              filePath.endsWith('opencode.json') ||
               (filePath.endsWith('AGENTS.md') && platform !== 'codex');
 
             if (!isRootInstruction) {
@@ -120,13 +121,24 @@ describe('Template Matrix Rendering (All 9 Platforms x 3 Output Modes)', () => {
               if (platform === 'cursor') {
                 expect(filePath.endsWith('.mdc')).toBe(true);
                 expect(content).toContain('globs: *');
+                if (isOrchestrator) {
+                  expect(content).toContain('alwaysApply: true');
+                } else {
+                  expect(content).toContain('alwaysApply: false');
+                }
               } else if (platform === 'opencode') {
                 if (filePath.includes('reponix-orchestrator')) {
                   expect(content).toContain('mode: primary');
                 } else {
                   expect(content).toContain('mode: subagent');
                 }
-              } else if (platform === 'copilot' || platform === 'copilot-cli') {
+              } else if (platform === 'windsurf') {
+                if (isOrchestrator) {
+                  expect(content).toContain('trigger: always_on');
+                } else {
+                  expect(content).toContain('trigger: model_decision');
+                }
+              } else if (platform === 'copilot' || platform === 'copilot-cli' || platform === 'continue') {
                 expect(content).toContain('description:');
               } else if (platform === 'gemini-cli' || platform === 'claude-code') {
                 expect(content.startsWith('<!-- Agent:')).toBe(true);

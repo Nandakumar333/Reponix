@@ -44,6 +44,14 @@ describe('getPlatformPaths', () => {
     expect(paths.rootInstructionFile).toContain('.cursorrules');
   });
 
+  it('correctly maps OpenCode paths with opencode.json config file', () => {
+    const paths = getPlatformPaths('opencode', 'project', '/mock/project');
+    expect(paths.agentsDir).toContain('.opencode');
+    expect(paths.extension).toBe('.md');
+    expect(paths.rootInstructionFile).toContain('instructions.md');
+    expect(paths.configFile).toContain('opencode.json');
+  });
+
   it('correctly maps Codex paths with merged file', () => {
     const paths = getPlatformPaths('codex', 'project', '/mock/project');
     expect(paths.mergedFile).toBe(true);

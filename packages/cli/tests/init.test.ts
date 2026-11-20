@@ -75,7 +75,7 @@ describe('renderAgents and skill installation', () => {
     }
   });
 
-  it('renders OpenCode agents with reponix-orchestrator as primary agent and subagents as subagent', async () => {
+  it('renders OpenCode agents with reponix-orchestrator as primary agent, subagents as subagent, and creates opencode.json', async () => {
     const answers: InitAnswers = {
       platform: 'opencode',
       scope: 'project',
@@ -89,7 +89,7 @@ describe('renderAgents and skill installation', () => {
     };
 
     const written = await renderAgents(answers, { targetDir: tmpDir });
-    expect(written.length).toBeGreaterThanOrEqual(3); // 2 agents + instructions.md
+    expect(written.length).toBeGreaterThanOrEqual(4); // 2 agents + instructions.md + opencode.json
 
     const orchestratorPath = path.join(tmpDir, '.opencode', 'agents', 'reponix-orchestrator.md');
     expect(fs.existsSync(orchestratorPath)).toBe(true);
@@ -106,6 +106,42 @@ describe('renderAgents and skill installation', () => {
     expect(fs.existsSync(instructionsPath)).toBe(true);
     const instructionsContent = fs.readFileSync(instructionsPath, 'utf-8');
     expect(instructionsContent).toContain('primary agent');
+
+    // opencode.json verification
+    const configPath = path.join(tmpDir, 'opencode.json');
+    expect(fs.existsSync(configPath)).toBe(true);
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    expect(config.default_agent).toBe('reponix-orchestrator');
+    expect(config.agent['reponix-orchestrator'].mode).toBe('primary');
+    expect(config.agent['repo-analyst'].mode).toBe('subagent');
+  });
+
+  it('correctly sets first agent as primary in opencode.json and agent files when orchestrator is not present', async () => {
+    const answers: InitAnswers = {
+      platform: 'opencode',
+      scope: 'project',
+      suite: 'intelligence',
+      projectName: 'NoOrchestratorProject',
+      techStack: ['Python'],
+      model: 'gemini-3.8-flash',
+      coreAgents: ['repo-analyst', 'arch-mapper', 'validator'],
+      optionalAgents: [],
+      installedSkills: [],
+    };
+
+    const written = await renderAgents(answers, { targetDir: tmpDir });
+    const configPath = path.join(tmpDir, 'opencode.json');
+    expect(fs.existsSync(configPath)).toBe(true);
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    expect(config.default_agent).toBe('repo-analyst');
+    expect(config.agent['repo-analyst'].mode).toBe('primary');
+    expect(config.agent['arch-mapper'].mode).toBe('subagent');
+    expect(config.agent['validator'].mode).toBe('subagent');
+
+    const analystPath = path.join(tmpDir, '.opencode', 'agents', 'repo-analyst.md');
+    expect(fs.existsSync(analystPath)).toBe(true);
+    const analystContent = fs.readFileSync(analystPath, 'utf-8');
+    expect(analystContent).toContain('mode: primary');
   });
 
   it('installs the okf skill and preserves output configuration', async () => {

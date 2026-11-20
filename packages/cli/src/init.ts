@@ -3,7 +3,7 @@ import pc from 'picocolors';
 import * as p from '@clack/prompts';
 import path from 'node:path';
 import { promptInit } from './prompts.js';
-import { renderAgents } from './engine/template.js';
+import { renderAgents, getPrimaryAgent } from './engine/template.js';
 import { installSkill } from './install-skill.js';
 import { saveConfig } from './engine/manifest.js';
 import type { Platform, Scope, Suite, InitAnswers, OutputFormat } from './types.js';
@@ -116,9 +116,10 @@ export function initCommand(): Command {
         }
         console.log(`   ${pc.green('✔')} ${configFile}\n`);
 
+        const primaryAgent = getPrimaryAgent([...answers.coreAgents, ...answers.optionalAgents]);
         console.log(pc.bold(pc.cyan('  Next Steps:')));
         console.log(`   1. Open your AI coding harness (${pc.bold(answers.platform)}).`);
-        console.log(`   2. Invoke the ${pc.bold('reponix-orchestrator')} agent to begin discovery:`);
+        console.log(`   2. Invoke the ${pc.bold(primaryAgent)} agent to begin discovery:`);
         console.log(pc.gray('      "Analyze this repository and generate system architecture."\n'));
       } catch (err: any) {
         s.stop(pc.red('Initialization failed.'));
