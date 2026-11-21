@@ -12,7 +12,7 @@ const program = new Command();
 program
   .name('reponix')
   .description('Scaffold production-grade multi-agent repository intelligence and modernization systems')
-  .version('0.1.0');
+  .version('0.1.7');
 
 // Add init command
 program.addCommand(initCommand());
