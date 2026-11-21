@@ -20,7 +20,7 @@ npx reponix init
 
 1. **Launch:** Run `npx reponix init`
 2. **Scope:** Choose **project** (current repository) or **global** (user home directory)
-3. **Platform:** Select your AI coding harness (Claude Code, Gemini CLI, Cursor, OpenCode, GitHub Copilot, Codex, Continue, Windsurf)
+3. **Platform:** Select your AI coding harness (Antigravity, Claude Code, Gemini CLI, Cursor, OpenCode, GitHub Copilot, Codex, Continue, Windsurf)
 4. **Agent Suite:** Choose **Modernization Suite** (Reponix-Orchestrator + Intelligence agents + Modernizer) or **Intelligence Suite** (Analysis only)
 5. **Setup:** Reponix renders platform-native agent files, installs selected skills, and saves configuration into `reponix.config.json`
 
@@ -117,6 +117,7 @@ If you prefer monolithic markdown files under `docs/`, set `output.format` to `"
 
 | Platform | Agent File Location | Root Instructions |
 |---|---|---|
+| **Antigravity** | `.agents/agents/*.md` | `AGENTS.md` |
 | **Gemini CLI** | `.gemini/agents/*.md` | `GEMINI.md` |
 | **Claude Code** | `.claude/agents/*.md` | `CLAUDE.md` |
 | **Cursor** | `.cursor/rules/*.mdc` | `.cursorrules` |

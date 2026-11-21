@@ -1,4 +1,5 @@
 export type Platform =
+  | 'antigravity'
   | 'opencode'
   | 'claude-code'
   | 'copilot'

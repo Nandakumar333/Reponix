@@ -4,6 +4,7 @@ import type { Platform } from '../src/types.js';
 
 describe('getPlatformPaths', () => {
   const platforms: Platform[] = [
+    'antigravity',
     'gemini-cli',
     'claude-code',
     'cursor',
@@ -21,6 +22,18 @@ describe('getPlatformPaths', () => {
       expect(paths.agentsDir).toBeDefined();
       expect(paths.extension).toBeDefined();
     }
+  });
+
+  it('correctly maps Antigravity paths in project and global scope', () => {
+    const projectPaths = getPlatformPaths('antigravity', 'project', '/mock/project');
+    expect(projectPaths.agentsDir).toContain('.agents');
+    expect(projectPaths.extension).toBe('.md');
+    expect(projectPaths.rootInstructionFile).toContain('AGENTS.md');
+
+    const globalPaths = getPlatformPaths('antigravity', 'global', '/mock/home');
+    expect(globalPaths.agentsDir).toContain('.gemini');
+    expect(globalPaths.agentsDir).toContain('antigravity');
+    expect(globalPaths.extension).toBe('.md');
   });
 
   it('correctly maps Gemini CLI paths', () => {

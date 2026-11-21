@@ -7,6 +7,15 @@ export function getPlatformPaths(platform: Platform, scope: Scope, customBaseDir
   const baseDir = customBaseDir || (scope === 'global' ? os.homedir() : process.cwd());
 
   switch (platform) {
+    case 'antigravity':
+      return {
+        agentsDir: scope === 'global'
+          ? path.join(baseDir, '.gemini', 'antigravity', 'agents')
+          : path.join(baseDir, '.agents', 'agents'),
+        extension: '.md',
+        rootInstructionFile: path.join(baseDir, 'AGENTS.md'),
+      };
+
     case 'opencode': {
       const dotConfig = path.join(baseDir, '.opencode', 'opencode.json');
       const rootConfig = path.join(baseDir, 'opencode.json');

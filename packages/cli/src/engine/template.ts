@@ -72,6 +72,7 @@ export function transformForPlatform(
   const isPrimary = isAgentPrimary(agentName, allAgents);
 
   switch (platform) {
+    case 'antigravity':
     case 'gemini-cli':
     case 'claude-code':
       return `<!-- Agent: ${agentName} | ${description} -->\n\n${body}`;
@@ -130,6 +131,20 @@ export function generateRootInstruction(
   const primaryAgent = getPrimaryAgent(allAgents);
 
   switch (platform) {
+    case 'antigravity': {
+      const imports = allAgents.map(a => `@.agents/agents/${a}.md`).join('\n');
+      return `# Reponix — Antigravity Agent Instructions
+
+## Project Context
+- **Project:** ${projectName}
+${techStack ? `- **Source Stack:** ${techStack}\n` : ''}${targetStack ? `- **Target Stack:** ${targetStack}\n` : ''}
+## Multi-Agent Architecture
+${imports}
+
+Start by invoking the **${primaryAgent}** agent when beginning repository analysis or modernization.
+`;
+    }
+
     case 'gemini-cli': {
       const imports = allAgents.map(a => `@.gemini/agents/${a}.md`).join('\n');
       return `# Reponix — Repository Intelligence & Modernization System

@@ -14,7 +14,7 @@ export function initCommand(): Command {
   cmd
     .description('Scaffold Reponix repository intelligence and modernization agents')
     .option('-y, --yes', 'Skip prompts and accept defaults')
-    .option('--platform <name>', 'Target AI platform (gemini-cli|claude-code|cursor|opencode|copilot|codex|continue|windsurf)')
+    .option('--platform <name>', 'Target AI platform (antigravity|gemini-cli|claude-code|cursor|opencode|copilot|codex|continue|windsurf)')
     .option('--scope <scope>', 'Installation scope: project or global')
     .option('--project', 'Install into current project repository')
     .option('--global', 'Install into user home directory')

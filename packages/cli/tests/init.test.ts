@@ -46,6 +46,39 @@ describe('renderAgents and skill installation', () => {
     expect(fs.existsSync(geminiMdPath)).toBe(true);
   });
 
+  it('renders Antigravity agents and AGENTS.md in target directory', async () => {
+    const answers: InitAnswers = {
+      platform: 'antigravity',
+      scope: 'project',
+      suite: 'modernization',
+      projectName: 'TestAntigravity',
+      techStack: ['Python', 'FastAPI'],
+      targetStack: ['TypeScript', 'Hono'],
+      model: 'gemini-3.8-flash',
+      coreAgents: ['reponix-orchestrator', 'repo-analyst'],
+      optionalAgents: [],
+      installedSkills: ['graphify'],
+    };
+
+    const written = await renderAgents(answers, { targetDir: tmpDir });
+    expect(written.length).toBeGreaterThanOrEqual(3); // 2 agents + AGENTS.md
+
+    const orchestratorPath = path.join(tmpDir, '.agents', 'agents', 'reponix-orchestrator.md');
+    expect(fs.existsSync(orchestratorPath)).toBe(true);
+
+    const orchestratorContent = fs.readFileSync(orchestratorPath, 'utf-8');
+    expect(orchestratorContent.startsWith('<!-- Agent: reponix-orchestrator')).toBe(true);
+    expect(orchestratorContent).toContain('TestAntigravity');
+    expect(orchestratorContent).toContain('Python, FastAPI');
+
+    const agentsMdPath = path.join(tmpDir, 'AGENTS.md');
+    expect(fs.existsSync(agentsMdPath)).toBe(true);
+    const agentsMdContent = fs.readFileSync(agentsMdPath, 'utf-8');
+    expect(agentsMdContent).toContain('# Reponix — Antigravity Agent Instructions');
+    expect(agentsMdContent).toContain('@.agents/agents/reponix-orchestrator.md');
+    expect(agentsMdContent).toContain('@.agents/agents/repo-analyst.md');
+  });
+
   it('renders Cursor rules with .mdc extension', async () => {
     const answers: InitAnswers = {
       platform: 'cursor',
@@ -71,6 +104,15 @@ describe('renderAgents and skill installation', () => {
     const dest = await installSkill('graphify', 'gemini-cli', 'project', { targetDir: tmpDir });
     expect(dest).not.toBeNull();
     if (dest) {
+      expect(fs.existsSync(path.join(dest, 'SKILL.md'))).toBe(true);
+    }
+  });
+
+  it('installs built-in skill into target directory for Antigravity', async () => {
+    const dest = await installSkill('graphify', 'antigravity', 'project', { targetDir: tmpDir });
+    expect(dest).not.toBeNull();
+    if (dest) {
+      expect(dest).toContain(path.join('.agents', 'skills', 'graphify'));
       expect(fs.existsSync(path.join(dest, 'SKILL.md'))).toBe(true);
     }
   });

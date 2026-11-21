@@ -6,6 +6,10 @@ import type { Platform, Scope } from './types.js';
 
 export function getSkillDestinationDir(platform: Platform, scope: Scope, baseDir: string = process.cwd()): string {
   switch (platform) {
+    case 'antigravity':
+      return scope === 'global'
+        ? path.join(baseDir, '.gemini', 'antigravity', 'skills')
+        : path.join(baseDir, '.agents', 'skills');
     case 'gemini-cli':
       return path.join(baseDir, '.gemini', 'skills');
     case 'claude-code':

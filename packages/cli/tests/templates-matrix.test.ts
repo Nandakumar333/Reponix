@@ -5,10 +5,11 @@ import os from 'node:os';
 import { renderAgents } from '../src/engine/template.js';
 import type { Platform, OutputFormat, InitAnswers } from '../src/types.js';
 
-describe('Template Matrix Rendering (All 9 Platforms x 3 Output Modes)', () => {
+describe('Template Matrix Rendering (All 10 Platforms x 3 Output Modes)', () => {
   let tmpDir: string;
 
   const platforms: Platform[] = [
+    'antigravity',
     'opencode',
     'claude-code',
     'copilot',
@@ -140,7 +141,7 @@ describe('Template Matrix Rendering (All 9 Platforms x 3 Output Modes)', () => {
                 }
               } else if (platform === 'copilot' || platform === 'copilot-cli' || platform === 'continue') {
                 expect(content).toContain('description:');
-              } else if (platform === 'gemini-cli' || platform === 'claude-code') {
+              } else if (platform === 'gemini-cli' || platform === 'claude-code' || platform === 'antigravity') {
                 expect(content.startsWith('<!-- Agent:')).toBe(true);
               }
             }

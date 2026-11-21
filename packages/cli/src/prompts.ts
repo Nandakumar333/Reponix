@@ -22,6 +22,7 @@ export async function promptInit(defaults?: Partial<InitAnswers>): Promise<InitA
   const platform = defaults?.platform || (await p.select({
     message: 'Which AI platform are you targeting?',
     options: [
+      { value: 'antigravity', label: 'Antigravity', hint: '.agents/agents + AGENTS.md' },
       { value: 'gemini-cli', label: 'Gemini CLI', hint: '.gemini/agents + GEMINI.md' },
       { value: 'claude-code', label: 'Claude Code', hint: '.claude/agents + CLAUDE.md' },
       { value: 'cursor', label: 'Cursor', hint: '.cursor/rules/*.mdc' },
